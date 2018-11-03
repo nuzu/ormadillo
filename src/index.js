@@ -20,11 +20,25 @@ const createConnection = (dbConfig) => {
     return connection
 }
 
+const expressOrm = async (config) => {
+    let db = createConnection(config.database)
+    let models = loadModels(config)
+    let mappers = createMappers(models, db)
+    await db.build(mappers)
+    return (req, res, next) => {
+        req.db = db
+        req.models = models
+        req.mappers = mappers
+        next()
+    }
+}
+
 
 export {
     loadModels,
     createMappers,
-    createConnection
+    createConnection,
+    expressOrm
 }
 
 export default async (app, config) => {
