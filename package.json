@@ -1,0 +1,49 @@
+{
+  "name": "@nuzu/ormadillo",
+  "version": "0.0.1",
+  "description": "Zero-config, fully customisable cross-database object-relational mapping (ORM) library",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "babel src --out-dir build --extensions .js --copy-files",
+    "start": "npm run build && npm run test",
+    "test": "node test/oldTest.js"
+  },
+  "author": "Nizar A <niz.ismail@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^3.0.0",
+    "glob": "^7.1.3",
+    "knex": "^0.15.2",
+    "lodash": "^4.17.10",
+    "pg": "^7.5.0",
+    "shortid": "^2.2.13"
+  },
+  "browserslist": {
+    "development": [
+      "last 2 chrome versions",
+      "last 2 firefox versions",
+      "last 2 edge versions"
+    ],
+    "production": [
+      ">0.25%",
+      "not op_mini all",
+      "ie 11"
+    ]
+  },
+  "devDependencies": {
+    "@babel/cli": "*",
+    "@babel/core": "*",
+    "@babel/plugin-proposal-class-properties": "*",
+    "@babel/plugin-proposal-decorators": "*",
+    "@babel/plugin-proposal-object-rest-spread": "*",
+    "@babel/plugin-transform-runtime": "*",
+    "@babel/preset-env": "*",
+    "@babel/runtime": "^7.1.2",
+    "babel-core": "^7.0.0-bridge.0",
+    "babel-jest": "^23.6.0",
+    "colors": "^1.3.2",
+    "express": "^4.16.4",
+    "jest": "^23.6.0",
+    "sqlite3": "^4.0.2"
+  }
+}
