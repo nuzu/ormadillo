@@ -42,14 +42,14 @@ export {
 	expressOrm
 };
 
-export default async (app, config) => {
-	if (!config) {
-		config = app.nuzu.config;
-	}
+export default async config => {
 	const db = createConnection(config.database);
 	const models = loadModels(config);
 	const mappers = createMappers(models, db);
 	await db.build(mappers);
-	Object.assign(app.nuzu, {db, models, mappers});
-	return app;
+	return {
+		db,
+		models,
+		mappers
+	};
 };

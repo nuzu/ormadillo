@@ -6,10 +6,11 @@
   "scripts": {
     "build": "babel src --out-dir build --extensions .js --copy-files",
     "start": "npm run build && npm run test",
-    "test": "node test/oldTest.js"
+    "test": "jest",
+    "lint": "xo --fix"
   },
   "author": "Nizar A <niz.ismail@gmail.com>",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "bcrypt": "^3.0.0",
     "glob": "^7.1.3",

@@ -1,4 +1,4 @@
-const expressOrm = require('../build').expressOrm
+const ormadillo = require('../build').default;
 
 const DATABASE_POSTGRES = {
 	name: 'postgres',
@@ -28,12 +28,12 @@ const DATABASE_SQLITE = {
 };
 
 const config = {
-		models: {
-			directory: './test/models'
-		},
-		database: DATABASE_POSTGRES
+	models: {
+		directory: './test/models'
+	},
+	database: DATABASE_POSTGRES
 };
 
-const ormMiddleware = expressOrm(config)
+const ormPromise = ormadillo(config);
 
-module.exports = ormMiddleware
+module.exports = ormPromise;

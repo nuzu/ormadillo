@@ -5,7 +5,7 @@ Zero-config, fully customisable cross-database object-relational mapping (ORM) l
 1. Sandboxing good testing strategies
 2. Adequate documentation for basic usage (whether possible or not just yet)
 3. Linting
-4. Get **Objectives** to work with databases in the following order: Postgres, MySQL/MariaDB, SQLite, MongoDB, Redis, ::memory, MSSQL, OracleDB, neo4Js 
+4. Get **Objectives** to work with databases in the following order: Postgres, MySQL
 
 ## Objectives
 1. Create a connection with the database
