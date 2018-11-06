@@ -1,4 +1,3 @@
-
 function configMapper(model, connection) {
 	Object.defineProperty(this, 'name', {value: model.name});
 	this.connection = connection;
@@ -54,7 +53,7 @@ function sortIntoType(name, value) {
 }
 
 function parseProperties() {
-	const properties = { };
+	const properties = {};
 
 	const errors = [];
 
@@ -229,8 +228,7 @@ async function validate(entry, cb) {
 	try {
 		const errors = [];
 		if (!entry) {
-			const {$mapper,
-				...rest} = this;
+			const {$mapper, ...rest} = this;
 			if (rest) {
 				entry = rest;
 			}
@@ -292,5 +290,4 @@ export default {
 	configMapper,
 	validate,
 	save
-
 };

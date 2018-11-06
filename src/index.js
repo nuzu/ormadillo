@@ -8,7 +8,8 @@ const loadModels = config => {
 	if (config.models && config.models.directory) {
 		modelsDir = config.models.directory;
 	}
-	return glob.sync(`${modelsDir}/*.js`)
+	return glob
+		.sync(`${modelsDir}/*.js`)
 		.map(each => require(path.resolve('.', each)));
 };
 
@@ -35,12 +36,7 @@ const expressOrm = async config => {
 	};
 };
 
-export {
-	loadModels,
-	createMappers,
-	createConnection,
-	expressOrm
-};
+export {loadModels, createMappers, createConnection, expressOrm};
 
 export default async config => {
 	const db = createConnection(config.database);

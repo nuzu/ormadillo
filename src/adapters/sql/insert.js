@@ -7,7 +7,10 @@ async function insertOne(entry, options) {
 	const {arrays, parsedEntry, relations} = parseInsertEntry.call(this, entry);
 	let row;
 	for (const key in relations.joinColumn) {
-		parsedEntry[key] = await insertJoinColumnRelations.call(this, relations.joinColumn[key]);
+		parsedEntry[key] = await insertJoinColumnRelations.call(
+			this,
+			relations.joinColumn[key]
+		);
 	}
 	const isEmpty = require('lodash/isEmpty');
 	if (!isEmpty(parsedEntry)) {
@@ -30,10 +33,12 @@ async function insertMany(entries, options) {
 	if (!client) {
 		console.log('No client available');
 	}
-	const items = Promise.all(entries.map(async entry => {
-		const item = await insertOne.call(this, entry, options);
-		return item;
-	}));
+	const items = Promise.all(
+		entries.map(async entry => {
+			const item = await insertOne.call(this, entry, options);
+			return item;
+		})
+	);
 
 	return items;
 }
@@ -45,67 +50,83 @@ function parseInsertEntry(entry, options) {
 	const tableName = this.name;
 	const relations = this.relations;
 	const reduce = require('lodash/reduce');
-	const parsedInput = reduce(entry, (acc, value, key) => {
-		if (arrays.includes(key)) {
-			const acceptedType = require('./types').getJavascriptType(columns[key].type);
-			const obj = {};
-			switch ((typeof value).toLowerCase()) {
-				case 'object':
-					if (Array.isArray(value)) {
-						obj.insert = value;
+	const parsedInput = reduce(
+		entry,
+		(acc, value, key) => {
+			if (arrays.includes(key)) {
+				const acceptedType = require('./types').getJavascriptType(
+					columns[key].type
+				);
+				const obj = {};
+				switch ((typeof value).toLowerCase()) {
+					case 'object':
+						if (Array.isArray(value)) {
+							obj.insert = value;
+						}
+						break;
+					case acceptedType:
+						obj.insert = [value];
+						break;
+				}
+				acc.arrays.push({
+					name: key,
+					arrayTableName: `array_${tableName}_${key}`,
+					...obj
+				});
+			} else if (
+				properties[key] === 'defaultRelation' ||
+				properties[key] === 'manyToMany'
+			) {
+				acc.relations.joinTable[key] = relations[key];
+				acc.relations.joinTable[key].value = value;
+			} else if (
+				properties[key] === 'joinToOne' ||
+				properties[key] === 'joinToJoin' ||
+				properties[key] === 'manyToOne'
+			) {
+				if (typeof value === 'object') {
+					if (value.id) {
+						acc.parsedEntry[key] = value.id;
 					}
-					break;
-				case acceptedType:
-					obj.insert = [value];
-					break;
-			}
-			acc.arrays.push({
-				name: key,
-				arrayTableName: `array_${tableName}_${key}`,
-				...obj
-			});
-		} else if (properties[key] === 'defaultRelation' || properties[key] === 'manyToMany') {
-			acc.relations.joinTable[key] = relations[key];
-			acc.relations.joinTable[key].value = value;
-		} else if (properties[key] === 'joinToOne' || properties[key] === 'joinToJoin' || properties[key] === 'manyToOne') {
-			if (typeof value === 'object') {
-				if (value.id) {
-					acc.parsedEntry[key] = value.id;
+				} else {
+					acc.parsedEntry[key] = value;
 				}
 			} else {
+				if (key === 'author') {
+					console.log(properties[key]);
+				}
 				acc.parsedEntry[key] = value;
 			}
-		} else {
-			if (key === 'author') {
-				console.log(properties[key]);
-			}
-			acc.parsedEntry[key] = value;
-		}
-		return acc;
-	}, {
-		arrays: [],
-		relations: {
-			joinTable: {},
-			joinColumn: {},
-			createFirst: {}
+			return acc;
 		},
-		parsedEntry: {},
-		insertIntoTable: {}
-	});
+		{
+			arrays: [],
+			relations: {
+				joinTable: {},
+				joinColumn: {},
+				createFirst: {}
+			},
+			parsedEntry: {},
+			insertIntoTable: {}
+		}
+	);
 	return parsedInput;
 }
 
 async function insertArrays(arrays, id) {
 	const client = this.connection.client;
-	await Promise.all(arrays.map(async array => {
-		if (array.insert) {
-			await client(array.arrayTableName)
-				.insert(array.insert.map(each => ({
-					key: id,
-					value: each
-				})));
-		}
-	}));
+	await Promise.all(
+		arrays.map(async array => {
+			if (array.insert) {
+				await client(array.arrayTableName).insert(
+					array.insert.map(each => ({
+						key: id,
+						value: each
+					}))
+				);
+			}
+		})
+	);
 }
 
 async function insertIntoRelationsTables(relation, rowNumber) {
@@ -133,15 +154,13 @@ async function insertIntoRelationsTables(relation, rowNumber) {
 			insertValue[`${relation.column_2}_id`] = rowNumber;
 			insertValue[`${relation.column_1}_id`] = relation.value;
 		}
-		await client(relation.targetTable)
-			.insert(insertValue);
+		await client(relation.targetTable).insert(insertValue);
 	}
 }
 
 async function insertJoinTableRelations(relation, rowNumber) {
 	const client = this.connection.client;
 	if (typeof relation.value === 'object') {
-
 	} else {
 		const insertValue = {};
 		if (relation.column_1 === this.name) {
@@ -151,15 +170,13 @@ async function insertJoinTableRelations(relation, rowNumber) {
 			insertValue[`${relation.column_2}_id`] = rowNumber;
 			insertValue[`${relation.column_1}_id`] = relation.value;
 		}
-		await client(relation.targetTable)
-			.insert(insertValue);
+		await client(relation.targetTable).insert(insertValue);
 	}
 }
 
 async function insertJoinColumnRelations(relation) {
 	const knex = this.connection.client;
 	if (typeof relation.value === 'object') {
-
 	} else {
 		return relation.value;
 	}
@@ -188,10 +205,17 @@ async function updateOne(selector, values, options) {
 }
 
 async function updateMany(selectorsArray, updatedValues, options) {
-	const items = await Promise.all(selectorsArray.map(async selector => {
-		const {item} = await updateOne.call(this, selector, updatedValues, options);
-		return item;
-	}));
+	const items = await Promise.all(
+		selectorsArray.map(async selector => {
+			const {item} = await updateOne.call(
+				this,
+				selector,
+				updatedValues,
+				options
+			);
+			return item;
+		})
+	);
 	return items;
 }
 

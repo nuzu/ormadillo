@@ -18,7 +18,8 @@ describe('set up environment', () => {
 });
 
 describe('insert/create', () => {
-	let Post; let Author;
+	let Post;
+	let Author;
 	beforeAll(() => {
 		({Post, Author} = db);
 	});
@@ -64,16 +65,24 @@ describe('insert/create', () => {
 
 	it('insert by insertOne', async () => {
 		expect.assertions(1);
-		const inserted_post = await Post.insertOne({title: 'When worlds collide', author: 1});
+		const inserted_post = await Post.insertOne({
+			title: 'When worlds collide',
+			author: 1
+		});
 		expect(inserted_post.item.title).toBe('When worlds collide');
 	});
 });
 
 describe('find/query', () => {
-	let Post; let Author;
+	let Post;
+	let Author;
 	beforeAll(async done => {
 		({Post, Author} = db);
-		await Post.insertOne({title: 'No one is safe', author: 2, tags: ['post', 'documentation']});
+		await Post.insertOne({
+			title: 'No one is safe',
+			author: 2,
+			tags: ['post', 'documentation']
+		});
 		done();
 	});
 
@@ -93,18 +102,31 @@ describe('find/query', () => {
 });
 
 describe('update/delete', () => {
-	let Post; let Author; let inserted_post;
+	let Post;
+	let Author;
+	let inserted_post;
 	beforeAll(async done => {
 		({Post, Author} = db);
-		inserted_post = await Post.insertOne({title: 'The Cuckoo Clock of Doom', author: 3, tags: ['horror', 'clock']});
-		inserted_post = await Post.insertOne({title: 'Stay Out of the Basement', author: 3, tags: ['horror', 'clock']});
+		inserted_post = await Post.insertOne({
+			title: 'The Cuckoo Clock of Doom',
+			author: 3,
+			tags: ['horror', 'clock']
+		});
+		inserted_post = await Post.insertOne({
+			title: 'Stay Out of the Basement',
+			author: 3,
+			tags: ['horror', 'clock']
+		});
 
 		done();
 	});
 
 	it('updateOne post', async () => {
 		expect.assertions(2);
-		const updated_post = await Post.updateOne({title: 'The Cuckoo Clock of Doom'}, {title: 'Cuckoo Clock of Doom'});
+		const updated_post = await Post.updateOne(
+			{title: 'The Cuckoo Clock of Doom'},
+			{title: 'Cuckoo Clock of Doom'}
+		);
 		expect(updated_post.item.title).toBe('Cuckoo Clock of Doom');
 		expect(updated_post.item.tags).toContain('horror');
 	});
@@ -112,7 +134,9 @@ describe('update/delete', () => {
 	it('deleteOne post', async () => {
 		expect.assertions(1);
 		await Post.deleteOne({title: 'Stay Out of the Basement'});
-		const payload_for_search = await Post.findOne({title: 'Stay Out of the Basement'});
+		const payload_for_search = await Post.findOne({
+			title: 'Stay Out of the Basement'
+		});
 		expect(payload_for_search.item).toBeNull();
 	});
 });

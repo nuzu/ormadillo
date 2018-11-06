@@ -1,6 +1,4 @@
-async function isValidRelation(relationObject) {
-
-}
+async function isValidRelation(relationObject) {}
 
 async function addRelation() {
 	console.log(this);
@@ -68,7 +66,6 @@ function oneToJoinRelation(raw_relation, name) {
 		type: 'one-to-join',
 		ownerTable: raw_relation.reference,
 		referencedTable: this.name
-
 	};
 
 	this.relations[name] = relation;

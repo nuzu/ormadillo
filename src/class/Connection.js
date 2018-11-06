@@ -21,7 +21,7 @@ class Connection {
 			const res = await buildTools.dropAllTables.call(this);
 			if (res) {
 				const tables = await buildTools.createTables.call(this, mappers);
-				await Promise.all(tables.map(table => this[table.name] = table));
+				await Promise.all(tables.map(table => (this[table.name] = table)));
 			}
 		}
 	}
@@ -30,9 +30,7 @@ class Connection {
 		return await buildTools.hasTable.call(this, tableName);
 	}
 
-	async connect() {
-
-	}
+	async connect() {}
 
 	async disconnect() {
 		await connectionTools.disconnect.call(this);
@@ -44,9 +42,7 @@ class Connection {
 		return mapper;
 	}
 
-	async dropTable(tableName) {
-
-	}
+	async dropTable(tableName) {}
 
 	async insert(tableName, item, insertOptions) {
 		console.log(this);

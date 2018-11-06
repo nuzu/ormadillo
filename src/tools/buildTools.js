@@ -1,7 +1,9 @@
 async function dropAllTables() {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log('Unable to build because invalid dialect access is being attempted');
+		return console.log(
+			'Unable to build because invalid dialect access is being attempted'
+		);
 	}
 	return await tools.dropAllTables.call(this);
 }
@@ -23,14 +25,16 @@ async function createTables(mappers) {
 	if (!Array.isArray(mappers)) {
 		mappers = [mappers];
 	}
-	mappers = await Promise.all(mappers.map(async mapper => {
-		const response = await hasTable.call(this, mapper.name);
-		console.log(`${mapper.name} does ${response ? '' : 'not'} exist`);
-		if (!response) {
-			await createTable.call(this, mapper);
-		}
-		return mapper;
-	}));
+	mappers = await Promise.all(
+		mappers.map(async mapper => {
+			const response = await hasTable.call(this, mapper.name);
+			console.log(`${mapper.name} does ${response ? '' : 'not'} exist`);
+			if (!response) {
+				await createTable.call(this, mapper);
+			}
+			return mapper;
+		})
+	);
 	await tools.formAllRelations.call(this, mappers);
 	return mappers;
 }
@@ -38,7 +42,9 @@ async function createTables(mappers) {
 async function createTable(mapper) {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log('Unable to build because invalid dialect access is being attempted');
+		return console.log(
+			'Unable to build because invalid dialect access is being attempted'
+		);
 	}
 	if (!mapper.name) {
 		throw 'Each model needs to have a name';
@@ -51,7 +57,9 @@ async function createTable(mapper) {
 async function dropTable(tableName) {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log('Unable to build because invalid dialect access is being attempted');
+		return console.log(
+			'Unable to build because invalid dialect access is being attempted'
+		);
 	}
 	await tools.dropTable.call(this, tableName);
 }

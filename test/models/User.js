@@ -27,7 +27,6 @@ module.exports = {
 			type: 'String',
 			array: true
 		}
-
 	},
 	events: {
 		beforeInsert: ['hashPassword']

@@ -26,7 +26,9 @@ export default {
 	connect(config) {
 		const tools = this._tools;
 		if (!tools) {
-			return console.log('Unable to connect because invalid dialect access is being attempted');
+			return console.log(
+				'Unable to connect because invalid dialect access is being attempted'
+			);
 		}
 		tools.connect.call(this, config);
 	},
@@ -50,5 +52,4 @@ export default {
 		const tools = this._tools;
 		await tools.disconnect.call(this);
 	}
-
 };

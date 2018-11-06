@@ -5,9 +5,9 @@
   "main": "build/index.js",
   "scripts": {
     "build": "babel src --out-dir build --extensions .js --copy-files",
-    "start": "npm run build && npm run test",
+    "start": "npm run lint && npm run build  && npm run test",
     "test": "jest",
-    "lint": "xo --fix"
+    "lint": "xo --prettier --fix"
   },
   "author": "Nizar A <niz.ismail@gmail.com>",
   "license": "MIT",

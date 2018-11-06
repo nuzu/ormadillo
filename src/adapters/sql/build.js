@@ -78,7 +78,9 @@ async function introspectDatabase() {
 
 async function hasTable(tableName) {
 	if (Array.isArray(tableName)) {
-		return await Promise.all(tableName.map(async each => await hasTable.call(this, each)));
+		return await Promise.all(
+			tableName.map(async each => await hasTable.call(this, each))
+		);
 	}
 	const rows = await getTables.call(this);
 	return rows.includes(tableName);
@@ -87,7 +89,9 @@ async function hasTable(tableName) {
 async function dropAllTables() {
 	const rows = await getTables.call(this);
 	if (rows.length > 0) {
-		await Promise.all(rows.map(async row => await dropForeigns.call(this, row)));
+		await Promise.all(
+			rows.map(async row => await dropForeigns.call(this, row))
+		);
 		await Promise.all(rows.map(async row => await dropTable.call(this, row)));
 	}
 	return true;

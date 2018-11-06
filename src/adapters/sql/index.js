@@ -5,11 +5,9 @@ const insert = require('./insert');
 const find = require('./find');
 
 module.exports = {
-
 	...connect,
 	...build,
 	...tables,
 	...insert,
 	...find
-
 };

@@ -4,7 +4,11 @@ async function insertOne(entry, insertOptions) {
 		if (!connection) {
 			throw 'No connection';
 		}
-		const [query, queryOptions] = await beforeInsert.call(this, entry, insertOptions);
+		const [query, queryOptions] = await beforeInsert.call(
+			this,
+			entry,
+			insertOptions
+		);
 		const record = await connection._tools.insertOne.call(
 			this,
 			query,
@@ -280,9 +284,7 @@ function addTimestamps(entry) {
 	return entry;
 }
 
-function relateBeforeInsert(entry) {
-
-}
+function relateBeforeInsert(entry) {}
 
 export default {
 	insertOne,

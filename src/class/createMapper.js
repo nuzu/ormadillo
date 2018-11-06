@@ -53,4 +53,3 @@ const createMapper = (model, connection) => {
 };
 
 export default createMapper;
-
