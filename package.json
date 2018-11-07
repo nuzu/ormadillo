@@ -5,9 +5,11 @@
   "main": "build/index.js",
   "scripts": {
     "build": "babel src --out-dir build --extensions .js --copy-files",
-    "start": "npm run lint && npm run build  && npm run test",
+    "start": "npm run build  && npm run lint && npm run test",
     "test": "jest",
-    "lint": "xo --prettier --fix"
+    "lint": "xo --fix",
+    "git": "git add . && git commit -m",
+    "postgit": "git push --all"
   },
   "author": "Nizar A <niz.ismail@gmail.com>",
   "license": "MIT",
@@ -43,9 +45,18 @@
     "babel-core": "^7.0.0-bridge.0",
     "babel-jest": "^23.6.0",
     "colors": "^1.3.2",
+    "eslint-plugin-jest": "^21.27.2",
+    "eslint-plugin-only-warn": "^1.0.1",
     "express": "^4.16.4",
     "jest": "^23.6.0",
     "sqlite3": "^4.0.2",
     "xo": "^0.23.0"
+  },
+  "xo": {
+    "prettier": true,
+    "extends": [
+      "plugin:jest/recommended"
+    ],
+    "plugins": ["only-warn"]
   }
 }

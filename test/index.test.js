@@ -56,20 +56,20 @@ describe('insert/create', () => {
 	it('insert and update by save', async () => {
 		expect.assertions(2);
 		const post = new Post({title: 'Javascript works', author: 2});
-		const saved_post = await post.save();
-		expect(saved_post.title).toBe(post.title);
-		saved_post.title = 'Python works too';
-		const updated_post = await saved_post.save();
-		expect(updated_post.title).toBe('Python works too');
+		const savedPost = await post.save();
+		expect(savedPost.title).toBe(post.title);
+		savedPost.title = 'Python works too';
+		const updatedPost = await savedPost.save();
+		expect(updatedPost.title).toBe('Python works too');
 	});
 
 	it('insert by insertOne', async () => {
 		expect.assertions(1);
-		const inserted_post = await Post.insertOne({
+		const insertedPost = await Post.insertOne({
 			title: 'When worlds collide',
 			author: 1
 		});
-		expect(inserted_post.item.title).toBe('When worlds collide');
+		expect(insertedPost.item.title).toBe('When worlds collide');
 	});
 });
 
@@ -88,31 +88,30 @@ describe('find/query', () => {
 
 	it('find Post including populated relations and arrays', async () => {
 		expect.assertions(2);
-		const found_post_payload = await Post.find({title: 'No one is safe'});
-		expect(found_post_payload.items[0].author.id).toBe(2);
-		expect(found_post_payload.items[0].tags).toContain('post');
+		const postPayload = await Post.find({title: 'No one is safe'});
+		expect(postPayload.items[0].author.id).toBe(2);
+		expect(postPayload.items[0].tags).toContain('post');
 	});
 
 	it('findOne Post including populated relations and arrays', async () => {
 		expect.assertions(2);
-		const found_post_payload = await Post.findOne({title: 'No one is safe'});
-		expect(found_post_payload.item.author.id).toBe(2);
-		expect(found_post_payload.item.tags).toContain('post');
+		const postPayload = await Post.findOne({title: 'No one is safe'});
+		expect(postPayload.item.author.id).toBe(2);
+		expect(postPayload.item.tags).toContain('post');
 	});
 });
 
 describe('update/delete', () => {
 	let Post;
 	let Author;
-	let inserted_post;
 	beforeAll(async done => {
 		({Post, Author} = db);
-		inserted_post = await Post.insertOne({
+		await Post.insertOne({
 			title: 'The Cuckoo Clock of Doom',
 			author: 3,
 			tags: ['horror', 'clock']
 		});
-		inserted_post = await Post.insertOne({
+		await Post.insertOne({
 			title: 'Stay Out of the Basement',
 			author: 3,
 			tags: ['horror', 'clock']
@@ -123,21 +122,21 @@ describe('update/delete', () => {
 
 	it('updateOne post', async () => {
 		expect.assertions(2);
-		const updated_post = await Post.updateOne(
+		const updatedPost = await Post.updateOne(
 			{title: 'The Cuckoo Clock of Doom'},
 			{title: 'Cuckoo Clock of Doom'}
 		);
-		expect(updated_post.item.title).toBe('Cuckoo Clock of Doom');
-		expect(updated_post.item.tags).toContain('horror');
+		expect(updatedPost.item.title).toBe('Cuckoo Clock of Doom');
+		expect(updatedPost.item.tags).toContain('horror');
 	});
 
 	it('deleteOne post', async () => {
 		expect.assertions(1);
 		await Post.deleteOne({title: 'Stay Out of the Basement'});
-		const payload_for_search = await Post.findOne({
+		const postPayload = await Post.findOne({
 			title: 'Stay Out of the Basement'
 		});
-		expect(payload_for_search.item).toBeNull();
+		expect(postPayload.item).toBeNull();
 	});
 });
 

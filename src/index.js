@@ -1,7 +1,7 @@
 import path from 'path';
 import glob from 'glob';
-import Connection from './class/Connection';
-import createMapper from './class/createMapper';
+import Connection from './class/connection';
+import createMapper from './class/create-mapper';
 
 const loadModels = config => {
 	let modelsDir = 'src/backend/models';

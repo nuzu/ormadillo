@@ -1,5 +1,5 @@
 async function find(entry, options) {
-	const client = this.connection.client;
+	const {client} = this.connection;
 	if (!client) {
 		console.log('No client available');
 	}
@@ -23,17 +23,16 @@ async function findOne(entry, options) {
 }
 
 function parseFindEntry(entry, options) {
-	const arrays = this.arrays;
-	const columns = this.columns;
-	const properties = this.properties;
+	const {arrays, columns, properties, relations} = this;
 	const tableName = this.name;
-	const relations = this.relations;
 	const reduce = require('lodash/reduce');
 	const parsedInput = reduce(
 		entry,
 		function(acc, value, key) {
 			if (arrays.includes(key)) {
-				const acceptedType = getJavascriptType(this.columns[key].type);
+				const acceptedType = require('./types').getJavascriptType(
+					this.columns[key].type
+				);
 				const obj = {};
 				switch ((typeof value).toLowerCase()) {
 					case 'object':
@@ -43,6 +42,8 @@ function parseFindEntry(entry, options) {
 						break;
 					case acceptedType:
 						obj.includes = [value];
+						break;
+					default:
 						break;
 				}
 				acc.arrays.push({
@@ -85,10 +86,12 @@ function parseFindEntry(entry, options) {
 }
 
 async function populate(rows) {
-	const arrays = this.arrays;
-	const relations = this.relations;
-	const client = this.connection.client;
-	const populated_rows = await Promise.all(
+	const {
+		arrays,
+		relations,
+		connection: {client}
+	} = this;
+	const populatedRows = await Promise.all(
 		rows.map(async row => {
 			await Promise.all(
 				arrays.map(async array => {
@@ -101,15 +104,16 @@ async function populate(rows) {
 					row[array] = arrayRecord;
 				})
 			);
+			/* eslint-disable no-await-in-loop */
 			for (const key in relations) {
 				const relation = relations[key];
 				let relationRecord;
 				switch (relation.type) {
 					case 'many-to-many':
 					case 'defaultRelation':
-						let otherTable = relation.column_1;
-						if (this.name === relation.column_1) {
-							otherTable = realtion.column_2;
+						let otherTable = relation.column1;
+						if (this.name === relation.column1) {
+							otherTable = relation.column2;
 						}
 						relationRecord = await client
 							.select(`${otherTable}.*`)
@@ -156,13 +160,13 @@ async function populate(rows) {
 						break;
 				}
 			}
-
+			/* eslint-enable no-await-in-loop */
 			return row;
 		})
 	);
 
 	// Console.log(populated_rows)
-	return populated_rows;
+	return populatedRows;
 }
 
 async function deleteOne(selector, options) {

@@ -3,7 +3,7 @@ async function isValidRelation(relationObject) {}
 async function addRelation() {
 	console.log(this);
 }
-function joinToJoinRelation(raw_relation, name) {
+function joinToJoinRelation(rawRelation, name) {
 	const column = {
 		name,
 		required: false,
@@ -14,15 +14,15 @@ function joinToJoinRelation(raw_relation, name) {
 		array: false,
 		maxLength: 254,
 		type: 'relation',
-		reference: raw_relation.reference
+		reference: rawRelation.reference
 	};
 
-	const tables = [raw_relation.reference, this.name].sort();
+	const tables = [rawRelation.reference, this.name].sort();
 
 	const relation = {
-		reference: raw_relation.reference,
-		table_1: tables[0],
-		table_2: tables[1],
+		reference: rawRelation.reference,
+		table1: tables[0],
+		table2: tables[1],
 		targetColumn: 'id',
 		type: 'join-to-join'
 	};
@@ -32,7 +32,7 @@ function joinToJoinRelation(raw_relation, name) {
 	this.columns[name] = column;
 }
 
-function joinToOneRelation(raw_relation, name) {
+function joinToOneRelation(rawRelation, name) {
 	const column = {
 		name,
 		required: false,
@@ -43,15 +43,15 @@ function joinToOneRelation(raw_relation, name) {
 		array: false,
 		maxLength: 254,
 		type: 'relation',
-		reference: raw_relation.reference
+		reference: rawRelation.reference
 	};
 
 	const relation = {
-		reference: raw_relation.reference,
+		reference: rawRelation.reference,
 		targetColumn: 'id',
 		type: 'join-to-one',
 		ownerTable: this.name,
-		referencedTable: raw_relation.reference
+		referencedTable: rawRelation.reference
 	};
 
 	this.relations[name] = relation;
@@ -59,12 +59,12 @@ function joinToOneRelation(raw_relation, name) {
 	this.columns[name] = column;
 }
 
-function oneToJoinRelation(raw_relation, name) {
+function oneToJoinRelation(rawRelation, name) {
 	const relation = {
-		reference: raw_relation.reference,
+		reference: rawRelation.reference,
 		targetColumn: 'id',
 		type: 'one-to-join',
-		ownerTable: raw_relation.reference,
+		ownerTable: rawRelation.reference,
 		referencedTable: this.name
 	};
 
@@ -72,7 +72,7 @@ function oneToJoinRelation(raw_relation, name) {
 	this.properties[name] = 'oneToJoin';
 }
 
-function manyToOneRelation(raw_relation, name) {
+function manyToOneRelation(rawRelation, name) {
 	const column = {
 		name,
 		required: false,
@@ -83,15 +83,15 @@ function manyToOneRelation(raw_relation, name) {
 		array: false,
 		maxLength: 254,
 		type: 'relation',
-		reference: raw_relation.reference
+		reference: rawRelation.reference
 	};
 
 	const relation = {
-		reference: raw_relation.reference,
+		reference: rawRelation.reference,
 		targetColumn: 'id',
 		type: 'many-to-one',
 		ownerTable: this.name,
-		referencedTable: raw_relation.reference
+		referencedTable: rawRelation.reference
 	};
 
 	this.relations[name] = relation;
@@ -99,12 +99,12 @@ function manyToOneRelation(raw_relation, name) {
 	this.columns[name] = column;
 }
 
-function oneToManyRelation(raw_relation, name) {
+function oneToManyRelation(rawRelation, name) {
 	const relation = {
-		reference: raw_relation.reference,
+		reference: rawRelation.reference,
 		targetColumn: 'id',
 		type: 'one-to-many',
-		ownerTable: raw_relation.reference,
+		ownerTable: rawRelation.reference,
 		referencedTable: this.name
 	};
 
@@ -112,15 +112,15 @@ function oneToManyRelation(raw_relation, name) {
 	this.properties[name] = 'oneToMany';
 }
 
-function manyToManyRelation(raw_relation, name) {
+function manyToManyRelation(rawRelation, name) {
 	const tableName = this.name;
-	const sortedTables = [raw_relation.reference, tableName].sort();
+	const sortedTables = [rawRelation.reference, tableName].sort();
 	const targetTable = `relation_${sortedTables.join('_')}`;
 
 	const relation = {
-		reference: raw_relation.reference,
-		column_1: sortedTables[0],
-		column_2: sortedTables[1],
+		reference: rawRelation.reference,
+		column1: sortedTables[0],
+		column2: sortedTables[1],
 		targetTable,
 		type: 'many-to-many'
 	};
@@ -129,15 +129,15 @@ function manyToManyRelation(raw_relation, name) {
 	this.properties[name] = 'manyToMany';
 }
 
-function defaultRelation(raw_relation, name) {
+function defaultRelation(rawRelation, name) {
 	const tableName = this.name;
-	const sortedTables = [raw_relation.reference, tableName].sort();
+	const sortedTables = [rawRelation.reference, tableName].sort();
 	const targetTable = `relation_${sortedTables.join('_')}`;
 
 	const relation = {
-		reference: raw_relation.reference,
-		column_1: sortedTables[0],
-		column_2: sortedTables[1],
+		reference: rawRelation.reference,
+		column1: sortedTables[0],
+		column2: sortedTables[1],
 		targetTable,
 		type: 'defaultRelation'
 	};

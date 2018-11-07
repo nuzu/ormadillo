@@ -1,7 +1,7 @@
 'use strict';
 
-import connectionTools from '../tools/connectionTools';
-import buildTools from '../tools/buildTools';
+import connectionTools from '../tools/connection-tools';
+import buildTools from '../tools/build-tools';
 
 class Connection {
 	constructor(config, name) {
@@ -21,20 +21,26 @@ class Connection {
 			const res = await buildTools.dropAllTables.call(this);
 			if (res) {
 				const tables = await buildTools.createTables.call(this, mappers);
-				await Promise.all(tables.map(table => (this[table.name] = table)));
+				await Promise.all(
+					tables.map(table => {
+						this[table.name] = table;
+						return table;
+					})
+				);
 			}
 		}
 	}
 
 	async hasTable(tableName) {
-		return await buildTools.hasTable.call(this, tableName);
+		const res = await buildTools.hasTable.call(this, tableName);
+		return res;
 	}
 
 	async connect() {}
 
 	async disconnect() {
-		await connectionTools.disconnect.call(this);
-		return true;
+		const res = await connectionTools.disconnect.call(this);
+		return res;
 	}
 
 	async createTable(mapper) {

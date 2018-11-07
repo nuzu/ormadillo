@@ -57,11 +57,11 @@ function parseProperties() {
 
 	const errors = [];
 
-	const raw_props = this.raw_properties;
+	const rawProps = this.raw_properties;
 	this.idTaken = false;
 
-	for (const key in raw_props) {
-		sortIntoType.call(this, key, raw_props[key]);
+	for (const key in rawProps) {
+		sortIntoType.call(this, key, rawProps[key]);
 	}
 	if (!this.idTaken) {
 		addIDProperty.call(this, this.primary);
@@ -118,7 +118,7 @@ function addIDProperty(name) {
 	return property;
 }
 
-function parseProperty(raw_prop, name) {
+function parseProperty(rawProp, name) {
 	const property = {
 		name,
 		required: false,
@@ -129,40 +129,40 @@ function parseProperty(raw_prop, name) {
 		array: false,
 		maxLength: 254
 	};
-	property.type = parsePropType(raw_prop.type);
+	property.type = parsePropType(rawProp.type);
 
 	// TODO: better selection to allow for custom error messages
-	if (raw_prop.required) {
+	if (rawProp.required) {
 		this.requireds.push(name);
 		property.required = true;
 	}
-	if (raw_prop.unique) {
+	if (rawProp.unique) {
 		this.uniques.push(name);
 		property.unique = true;
 	}
-	if (raw_prop.index) {
+	if (rawProp.index) {
 		this.indices.push(name);
 		property.index = true;
 	}
 
 	if (property.type === 'virtual') {
-		property.virtualFn = raw_prop.function;
+		property.virtualFn = rawProp.function;
 		this.virtuals.push(name);
 	}
 
 	if (property.type === 'enum') {
 		property.isEnum = true;
 	}
-	if (raw_prop.array) {
+	if (rawProp.array) {
 		this.arrays.push(name);
 		property.array = true;
 	}
 
-	if (raw_prop.hasOwnProperty('defaultValue')) {
-		property.defaultValue = raw_prop.defaultValue;
+	if (rawProp.hasOwnProperty('defaultValue')) {
+		property.defaultValue = rawProp.defaultValue;
 	}
-	if (raw_prop.hasOwnProperty('length')) {
-		property.maxLength = raw_prop.maxLength;
+	if (rawProp.hasOwnProperty('length')) {
+		property.maxLength = rawProp.maxLength;
 	}
 
 	return property;
@@ -181,32 +181,32 @@ function parsePropType(type) {
 	}
 }
 
-function parseRelation(raw_relation, name) {
-	const $rt = require('./relationTools');
-	const relationType = raw_relation.relation || '';
+function parseRelation(rawRelation, name) {
+	const $rt = require('./relation-tools');
+	const relationType = rawRelation.relation || '';
 	switch (relationType.toLowerCase()) {
 		case 'one-to-one':
 		case 'join-to-join':
-			return $rt.joinToJoinRelation.call(this, raw_relation, name);
+			return $rt.joinToJoinRelation.call(this, rawRelation, name);
 		case 'join-to-one':
-			return $rt.joinToOneRelation.call(this, raw_relation, name);
+			return $rt.joinToOneRelation.call(this, rawRelation, name);
 		case 'one-to-join':
-			return $rt.oneToJoingRelation.call(this, raw_relation, name);
+			return $rt.oneToJoingRelation.call(this, rawRelation, name);
 		case 'one-to-many':
-			return $rt.oneToManyRelation.call(this, raw_relation, name);
+			return $rt.oneToManyRelation.call(this, rawRelation, name);
 		case 'many-to-one':
-			return $rt.manyToOneRelation.call(this, raw_relation, name);
+			return $rt.manyToOneRelation.call(this, rawRelation, name);
 		case 'many-to-many':
-			return $rt.manyToManyRelation.call(this, raw_relation, name);
+			return $rt.manyToManyRelation.call(this, rawRelation, name);
 		default:
-			return $rt.defaultRelation.call(this, raw_relation, name);
+			return $rt.defaultRelation.call(this, rawRelation, name);
 	}
 
-	if (raw_relation.required) {
+	if (rawRelation.required) {
 		this.requireds.push(name);
 		column.required = true;
 	}
-	if (raw_relation.unique) {
+	if (rawRelation.unique) {
 		this.uniques.push(name);
 		column.unique = true;
 	}
@@ -217,8 +217,8 @@ function parseRelation(raw_relation, name) {
 	};
 }
 
-function parseVirtual(raw_virtual, name) {
-	const property = parseProperty(raw_virtual);
+function parseVirtual(rawVirtual, name) {
+	const property = parseProperty(rawVirtual);
 	property.type = 'virtual';
 
 	return property;

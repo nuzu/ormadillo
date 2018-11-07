@@ -3,11 +3,12 @@ const testConnection = res => {
 };
 
 async function getTables() {
-	return await raw(`SELECT name
+	const res = await this.raw(`SELECT name
 FROM sqlite_master
 WHERE type='table'
 ORDER BY name
 `);
+	return res;
 }
 
 async function getColumns(tableName) {

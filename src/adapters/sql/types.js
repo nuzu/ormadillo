@@ -26,6 +26,8 @@ function getStandardType(type) {
 			return 'datetime';
 		case 'boolean':
 			return 'boolean';
+		default:
+			return 'string';
 	}
 }
 

@@ -1,17 +1,16 @@
 async function dropAllTables() {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log(
-			'Unable to build because invalid dialect access is being attempted'
-		);
+		throw require('../error/messages').NO_TOOLS;
 	}
-	return await tools.dropAllTables.call(this);
+	const res = await tools.dropAllTables.call(this);
+	return res;
 }
 
 async function hasTable(tableName) {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log('No tools');
+		throw require('../error/messages').NO_TOOLS;
 	}
 	const res = await tools.hasTable.call(this, tableName);
 	return res;
@@ -20,7 +19,7 @@ async function hasTable(tableName) {
 async function createTables(mappers) {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log('No tools');
+		throw require('../error/messages').NO_TOOLS;
 	}
 	if (!Array.isArray(mappers)) {
 		mappers = [mappers];
@@ -42,12 +41,10 @@ async function createTables(mappers) {
 async function createTable(mapper) {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log(
-			'Unable to build because invalid dialect access is being attempted'
-		);
+		throw require('../error/messages').NO_TOOLS;
 	}
 	if (!mapper.name) {
-		throw 'Each model needs to have a name';
+		throw require('../error/messages').MODEL_NO_NAME;
 	}
 	await tools.createTable.call(this, mapper);
 
@@ -57,11 +54,10 @@ async function createTable(mapper) {
 async function dropTable(tableName) {
 	const tools = this._tools;
 	if (!tools) {
-		return console.log(
-			'Unable to build because invalid dialect access is being attempted'
-		);
+		throw require('../error/messages').NO_TOOLS;
 	}
-	await tools.dropTable.call(this, tableName);
+	const res = await tools.dropTable.call(this, tableName);
+	return res;
 }
 
 export default {

@@ -1,27 +1,38 @@
 async function insertOne(entry, options) {
-	const client = this.connection.client;
-	if (!client) {
-		console.log('No client available');
-	}
+	const {client} = this.connection;
+	if (!client) throw require('./error').NO_CLIENT;
 	const tableName = this.name;
 	const {arrays, parsedEntry, relations} = parseInsertEntry.call(this, entry);
 	let row;
+	/* eslint-disable no-await-in-loop */
 	for (const key in relations.joinColumn) {
-		parsedEntry[key] = await insertJoinColumnRelations.call(
-			this,
-			relations.joinColumn[key]
-		);
+		if ({}.hasOwnProperty.call(relations.joinColumn, key)) {
+			parsedEntry[key] = await insertJoinColumnRelations.call(
+				this,
+				relations.joinColumn[key]
+			);
+		}
 	}
+	/* eslint-enable no-await-in-loop */
 	const isEmpty = require('lodash/isEmpty');
+	const returning = options && options.returning ? options.returning : '*';
 	if (!isEmpty(parsedEntry)) {
 		[row] = await client(tableName)
 			.insert(parsedEntry)
-			.returning('*');
+			.returning(returning);
 	}
 	await insertArrays.call(this, arrays, row.id);
+	/* eslint-disable no-await-in-loop */
 	for (const key in relations.joinTable) {
-		await insertJoinTableRelations.call(this, relations.joinTable[key], row.id);
+		if ({}.hasOwnProperty.call(relations.joinTable, key)) {
+			await insertJoinTableRelations.call(
+				this,
+				relations.joinTable[key],
+				row.id
+			);
+		}
 	}
+	/* eslint-enable no-await-in-loop */
 
 	const [item] = await require('./find').populate.call(this, [row]);
 	// Const [item] = rows
@@ -29,11 +40,9 @@ async function insertOne(entry, options) {
 }
 
 async function insertMany(entries, options) {
-	const client = this.connection.client;
-	if (!client) {
-		console.log('No client available');
-	}
-	const items = Promise.all(
+	const {client} = this.connection;
+	if (!client) throw require('./error').NO_CLIENT;
+	const items = await Promise.all(
 		entries.map(async entry => {
 			const item = await insertOne.call(this, entry, options);
 			return item;
@@ -43,12 +52,9 @@ async function insertMany(entries, options) {
 	return items;
 }
 
-function parseInsertEntry(entry, options) {
-	const arrays = this.arrays;
-	const columns = this.columns;
-	const properties = this.properties;
+function parseInsertEntry(entry, _options) {
+	const {arrays, columns, properties, relations} = this;
 	const tableName = this.name;
-	const relations = this.relations;
 	const reduce = require('lodash/reduce');
 	const parsedInput = reduce(
 		entry,
@@ -66,6 +72,8 @@ function parseInsertEntry(entry, options) {
 						break;
 					case acceptedType:
 						obj.insert = [value];
+						break;
+					default:
 						break;
 				}
 				acc.arrays.push({
@@ -114,7 +122,7 @@ function parseInsertEntry(entry, options) {
 }
 
 async function insertArrays(arrays, id) {
-	const client = this.connection.client;
+	const {client} = this.connection;
 	await Promise.all(
 		arrays.map(async array => {
 			if (array.insert) {
@@ -130,15 +138,15 @@ async function insertArrays(arrays, id) {
 }
 
 async function insertIntoRelationsTables(relation, rowNumber) {
-	const client = this.connection.client;
+	const {client} = this.connection;
 	if (typeof relation.value === 'object') {
 		if (relation.value.id) {
 			relation.value = relation.value.id;
 			insertIntoRelationsTables.call(this, relation, rowNumber);
 		} else {
-			let childTable = relation.column_1;
-			if (relation.column_1 === this.name) {
-				childTable = relation.column_2;
+			let childTable = relation.column1;
+			if (relation.column1 === this.name) {
+				childTable = relation.column2;
 			}
 			const childRelation = await client(childTable)
 				.insert(relation.value)
@@ -147,35 +155,35 @@ async function insertIntoRelationsTables(relation, rowNumber) {
 		}
 	} else {
 		const insertValue = {};
-		if (relation.column_1 === this.name) {
-			insertValue[`${relation.column_1}_id`] = rowNumber;
-			insertValue[`${relation.column_2}_id`] = relation.value;
-		} else if (relation.column_2 === this.name) {
-			insertValue[`${relation.column_2}_id`] = rowNumber;
-			insertValue[`${relation.column_1}_id`] = relation.value;
+		if (relation.column1 === this.name) {
+			insertValue[`${relation.column1}_id`] = rowNumber;
+			insertValue[`${relation.column2}_id`] = relation.value;
+		} else if (relation.column2 === this.name) {
+			insertValue[`${relation.column2}_id`] = rowNumber;
+			insertValue[`${relation.column1}_id`] = relation.value;
 		}
 		await client(relation.targetTable).insert(insertValue);
 	}
 }
 
 async function insertJoinTableRelations(relation, rowNumber) {
-	const client = this.connection.client;
+	const {client} = this.connection;
 	if (typeof relation.value === 'object') {
 	} else {
 		const insertValue = {};
-		if (relation.column_1 === this.name) {
-			insertValue[`${relation.column_1}_id`] = rowNumber;
-			insertValue[`${relation.column_2}_id`] = relation.value;
-		} else if (relation.column_2 === this.name) {
-			insertValue[`${relation.column_2}_id`] = rowNumber;
-			insertValue[`${relation.column_1}_id`] = relation.value;
+		if (relation.column1 === this.name) {
+			insertValue[`${relation.column1}_id`] = rowNumber;
+			insertValue[`${relation.column2}_id`] = relation.value;
+		} else if (relation.column2 === this.name) {
+			insertValue[`${relation.column2}_id`] = rowNumber;
+			insertValue[`${relation.column1}_id`] = relation.value;
 		}
 		await client(relation.targetTable).insert(insertValue);
 	}
 }
 
 async function insertJoinColumnRelations(relation) {
-	const knex = this.connection.client;
+	const {client} = this.connection;
 	if (typeof relation.value === 'object') {
 	} else {
 		return relation.value;
@@ -183,7 +191,7 @@ async function insertJoinColumnRelations(relation) {
 }
 
 async function updateOne(selector, values, options) {
-	const client = this.connection.client;
+	const {client} = this.connection;
 	if (!client) {
 		console.log('No client available');
 	}
@@ -191,14 +199,14 @@ async function updateOne(selector, values, options) {
 	const {arrays, parsedEntry, relations} = parseInsertEntry.call(this, values);
 	let rows = [];
 	const isEmpty = require('lodash/isEmpty');
-	if (!isEmpty(parsedEntry)) {
+	if (isEmpty(parsedEntry)) {
+		rows = await require('./find').find.call(this, selector);
+		console.log(rows);
+	} else {
 		rows = await client(tableName)
 			.where(selector)
 			.update(parsedEntry)
 			.returning('*');
-	} else {
-		rows = await require('./find').find.call(this, selector);
-		console.log(rows);
 	}
 	const [populatedRow] = await require('./find').populate.call(this, rows);
 	return populatedRow;

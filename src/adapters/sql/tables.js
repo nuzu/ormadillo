@@ -14,7 +14,7 @@ async function createTable(mapper) {
 async function createArrayTable(array, mapperName) {
 	const knex = this.client;
 	const arrayTableName = `array_${mapperName}_${array.name}`;
-	await knex.schema.createTable(arrayTableName, async t => {
+	await knex.schema.createTable(arrayTableName, t => {
 		t.increments('id');
 		t.integer('key')
 			.unsigned()
@@ -29,44 +29,51 @@ async function createArrayTable(array, mapperName) {
 async function formAllRelations(mappers) {
 	console.log('Forming relations');
 	await Promise.all(
-		mappers.map(async mapper => await formRelations.call(this, mapper))
+		mappers.map(async mapper => {
+			const res = await formRelations.call(this, mapper);
+			return res;
+		})
 	);
 	console.log('All relations formed');
 }
 
 async function formRelations(mapper) {
 	const knex = this.client;
-	const {name, relations, properties} = mapper;
+	const {name, relations} = mapper;
 	const relationsColumns = {};
 	const relationsTables = {};
 	for (const key in relations) {
-		switch (relations[key].type) {
-			case 'join-to-join':
-			case 'join-to-one':
-			case 'many-to-one':
-				relationsColumns[key] = relations[key];
-				break;
-			case 'many=tp-many':
-			case 'defaultRelation':
-				relationsTables[key] = relations[key];
-				break;
-			default:
-				break;
+		if ({}.hasOwnProperty.call(relations, key)) {
+			switch (relations[key].type) {
+				case 'join-to-join':
+				case 'join-to-one':
+				case 'many-to-one':
+					relationsColumns[key] = relations[key];
+					break;
+				case 'many=tp-many':
+				case 'defaultRelation':
+					relationsTables[key] = relations[key];
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
 	await knex.schema.table(name, t => {
 		for (const key in relationsColumns) {
-			t.integer(key)
-				.unsigned()
-				.references('id')
-				.inTable(relationsColumns[key].reference)
-				.onDelete('CASCADE')
-				.onUpdate('CASCADE');
-			if (
-				['join-to-join', 'join-to-one'].includes(relationsColumns[key].type)
-			) {
-				t.unique(key);
+			if ({}.hasOwnProperty.call(relationsColumns, key)) {
+				t.integer(key)
+					.unsigned()
+					.references('id')
+					.inTable(relationsColumns[key].reference)
+					.onDelete('CASCADE')
+					.onUpdate('CASCADE');
+				if (
+					['join-to-join', 'join-to-one'].includes(relationsColumns[key].type)
+				) {
+					t.unique(key);
+				}
 			}
 		}
 	});
@@ -75,21 +82,21 @@ async function formRelations(mapper) {
 		Object.keys(relationsTables).map(async key => {
 			const relation = relationsTables[key];
 			await knex.schema.createTable(relation.targetTable, t => {
-				t.integer(`${relation.column_1}_id`)
+				t.integer(`${relation.column1}_id`)
 					.unsigned()
 					.references('id')
-					.inTable(relation.column_1)
+					.inTable(relation.column1)
 					.onDelete('CASCADE')
 					.onUpdate('CASCADE');
 
-				t.integer(`${relation.column_2}_id`)
+				t.integer(`${relation.column2}_id`)
 					.unsigned()
 					.references('id')
-					.inTable(relation.column_2)
+					.inTable(relation.column2)
 					.onDelete('CASCADE')
 					.onUpdate('CASCADE');
 
-				t.primary([`${relation.column_1}_id`, `${relation.column_2}_id`]);
+				t.primary([`${relation.column1}_id`, `${relation.column2}_id`]);
 			});
 		})
 	);
@@ -103,18 +110,20 @@ const createKnexCallback = mapper => {
 		t[require('./types').getKnexFunction(id.type)]('id'); // Custom id names ?
 
 		for (const key in rest) {
-			const {type, defaultValue, required, array} = rest[key];
-			let column;
-			if (type.toLowerCase() !== 'relation') {
-				if (!array) {
-					column = t[require('./types').getKnexFunction(type)](key);
-				}
-				// If(array) column = t.specificType(key, ``)
-				if (column && required) {
-					column.notNullable();
-				}
-				if (column && defaultValue !== undefined) {
-					column.defaultsTo(defaultValue);
+			if ({}.hasOwnProperty.call(rest, key)) {
+				const {type, defaultValue, required, array} = rest[key];
+				let column;
+				if (type.toLowerCase() !== 'relation') {
+					if (!array) {
+						column = t[require('./types').getKnexFunction(type)](key);
+					}
+					// If(array) column = t.specificType(key, ``)
+					if (column && required) {
+						column.notNullable();
+					}
+					if (column && defaultValue !== undefined) {
+						column.defaultsTo(defaultValue);
+					}
 				}
 			}
 		}

@@ -251,7 +251,7 @@ async function beforeInsert(entry, options) {
 		entry = addTimestamps(entry);
 	}
 
-	const isValidated = await require('./mapperTools').default.validate.call(
+	const isValidated = await require('./mapper-tools').default.validate.call(
 		this,
 		entry
 	);
