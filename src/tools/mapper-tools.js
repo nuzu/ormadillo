@@ -16,6 +16,7 @@ function configMapper(model, connection) {
 	this.arrays = [];
 	this.primary = 'id';
 	parseProperties.call(this);
+	this.schema = require('./validation-tools').createSchema.call(this);
 }
 
 function sortIntoType(name, value) {
@@ -53,10 +54,6 @@ function sortIntoType(name, value) {
 }
 
 function parseProperties() {
-	const properties = {};
-
-	const errors = [];
-
 	const rawProps = this.raw_properties;
 	this.idTaken = false;
 
@@ -158,10 +155,10 @@ function parseProperty(rawProp, name) {
 		property.array = true;
 	}
 
-	if (rawProp.hasOwnProperty('defaultValue')) {
+	if ({}.hasOwnProperty.call(rawProp, 'defaultValue')) {
 		property.defaultValue = rawProp.defaultValue;
 	}
-	if (rawProp.hasOwnProperty('length')) {
+	if ({}.hasOwnProperty.call(rawProp, 'length')) {
 		property.maxLength = rawProp.maxLength;
 	}
 
@@ -201,20 +198,6 @@ function parseRelation(rawRelation, name) {
 		default:
 			return $rt.defaultRelation.call(this, rawRelation, name);
 	}
-
-	if (rawRelation.required) {
-		this.requireds.push(name);
-		column.required = true;
-	}
-	if (rawRelation.unique) {
-		this.uniques.push(name);
-		column.unique = true;
-	}
-
-	return {
-		relation,
-		column
-	};
 }
 
 function parseVirtual(rawVirtual, name) {
@@ -224,40 +207,35 @@ function parseVirtual(rawVirtual, name) {
 	return property;
 }
 
-async function validate(entry, cb) {
+async function validate(entry, options = {isValid: true}, cb) {
 	try {
-		const errors = [];
+		let schema;
 		if (!entry) {
 			const {$mapper, ...rest} = this;
+			({schema} = $mapper);
 			if (rest) {
 				entry = rest;
 			}
+		} else {
+			({schema} = this);
 		}
 		const properties = this.properties || this.$mapper.properties;
 		if (typeof entry !== 'object') {
-			throw 'Unable to identify variable which is not an object.';
+			throw new TypeError(
+				'Unable to identify variable which is not an object.'
+			);
 		}
-		for (const key in entry) {
-			if (!properties.hasOwnProperty(key)) {
-				errors.push(`Invalid parameter - ${key}`);
-			}
-		}
-		if (errors.length > 0) {
-			throw errors;
+		const res = schema.validateSync(entry, {strict: true});
+		if (options.isValid) {
+			return true;
 		}
 		if (cb) {
 			return cb(null);
 		}
-		console.log('validated');
-		return true;
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
-		if (cb) {
-			return cb(errors);
-		}
+		return res;
+	} catch (error) {
+		console.log('unable to validate');
+		console.log(error);
 		return false;
 	}
 }
@@ -272,16 +250,13 @@ async function save() {
 				[$mapper.primary]: entry[$mapper.primary]
 			};
 
-			res = await $mapper.updateOne.call($mapper, selector, entry);
+			res = await $mapper.updateOne(selector, entry);
 		} else {
-			res = await $mapper.insertOne.call($mapper, entry);
+			res = await $mapper.insertOne(entry);
 		}
 		return res.item;
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }

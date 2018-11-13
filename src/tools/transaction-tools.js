@@ -1,8 +1,8 @@
 async function insertOne(entry, insertOptions) {
 	try {
-		const connection = this.connection;
+		const {connection} = this;
 		if (!connection) {
-			throw 'No connection';
+			throw new Error('No connection');
 		}
 		const [query, queryOptions] = await beforeInsert.call(
 			this,
@@ -22,11 +22,8 @@ async function insertOne(entry, insertOptions) {
 			items: [item],
 			count: 1
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -34,19 +31,19 @@ async function insertOne(entry, insertOptions) {
 async function insertMany(entries, insertOptions) {
 	try {
 		const Mapper = this;
-		const connection = this.connection;
+		const {connection} = this;
 		if (!connection) {
-			throw 'No connection';
+			throw new Error('No connection');
 		}
 		if (!Array.isArray(entries)) {
 			entries = [entries];
 		}
-		const items_0 = await connection._tools.insertMany.call(
+		const items0 = await connection._tools.insertMany.call(
 			this,
 			entries,
 			insertOptions
 		);
-		const items = items_0.map(each => new Mapper(each));
+		const items = items0.map(each => new Mapper(each));
 		return {
 			success: true,
 			error: null,
@@ -54,11 +51,8 @@ async function insertMany(entries, insertOptions) {
 			items,
 			count: items.length
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -66,12 +60,12 @@ async function insertMany(entries, insertOptions) {
 async function find(entry, findOptions) {
 	try {
 		const Mapper = this;
-		const connection = this.connection;
+		const {connection} = this;
 		if (!connection) {
-			throw 'No connection';
+			throw new Error('No connection');
 		}
-		const items_0 = await connection._tools.find.call(this, entry, findOptions);
-		const items = items_0.map(each => new Mapper(each));
+		const items0 = await connection._tools.find.call(this, entry, findOptions);
+		const items = items0.map(each => new Mapper(each));
 		return {
 			success: true,
 			error: null,
@@ -79,11 +73,8 @@ async function find(entry, findOptions) {
 			items,
 			count: items.length
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -91,9 +82,9 @@ async function find(entry, findOptions) {
 async function findOne(entry, findOptions) {
 	try {
 		const Mapper = this;
-		const connection = this.connection;
+		const {connection} = this;
 		if (!connection) {
-			throw 'No connection';
+			throw new Error('No connection');
 		}
 		const record = await connection._tools.findOne.call(
 			this,
@@ -117,11 +108,8 @@ async function findOne(entry, findOptions) {
 			items: [],
 			item: null
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -131,15 +119,15 @@ async function updateOne(selector, values, updateOptions) {
 		const Mapper = this;
 		const connection = this.connection || this.$mapper.connection;
 		if (!connection) {
-			throw 'No connection';
+			throw new Error('No connection');
 		}
-		const item_0 = await connection._tools.updateOne.call(
+		const item0 = await connection._tools.updateOne.call(
 			this,
 			selector,
 			values,
 			updateOptions
 		);
-		const item = new Mapper(item_0);
+		const item = new Mapper(item0);
 		return {
 			success: true,
 			error: null,
@@ -160,7 +148,7 @@ async function updateMany(selectorsArray, updatedValues, updateOptions) {
 	try {
 		const connection = this.connection || this.$mapper.connection;
 		if (!connection) {
-			throw 'No connection';
+			throw new Error('No connection');
 		}
 		const items = await connection._tools.updateMany.call(
 			this,
@@ -175,11 +163,8 @@ async function updateMany(selectorsArray, updatedValues, updateOptions) {
 			items,
 			count: items.length
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -202,11 +187,8 @@ async function deleteOne(selector, deleteOptions) {
 			items: [item],
 			count: 1
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -215,7 +197,7 @@ async function deleteMany(selectors, deleteOptions) {
 	try {
 		const connection = this.connection || this.$mapper.connection;
 		if (!connection) {
-			throw 'No connection';
+			throw new Error('No connection');
 		}
 		const items = await connection._tools.deleteMany.call(
 			this,
@@ -226,15 +208,12 @@ async function deleteMany(selectors, deleteOptions) {
 		return {
 			success: true,
 			error: null,
-			item: item[0],
+			item: items[0],
 			items,
 			count: items.length
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -256,7 +235,9 @@ async function beforeInsert(entry, options) {
 		entry
 	);
 	if (!isValidated) {
-		throw 'Unable to validate entry data. Check the console log for more information.';
+		throw new Error(
+			'Unable to validate entry data. Check the console log for more information.'
+		);
 	}
 
 	return [entry, options];

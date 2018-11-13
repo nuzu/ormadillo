@@ -185,7 +185,7 @@ async function deleteOne(selector, options) {
 async function deleteMany(selectors, options) {
 	const items = await Promise.all(
 		selectors.map(async selector => {
-			const {item} = await this.deleteOne.call(this, selector, options);
+			const {item} = await this.deleteOne(selector, options);
 			return item;
 		})
 	);

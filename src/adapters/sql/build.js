@@ -7,6 +7,8 @@ async function getTables() {
 		case 'sqlite':
 			tables = await require('./lite').getTables.call(this);
 			break;
+		default:
+			break;
 	}
 	return tables;
 }
@@ -19,6 +21,8 @@ async function getColumns(tableName) {
 			break;
 		case 'sqlite':
 			columns = await require('./lite').getColumns.call(this, tableName);
+			break;
+		default:
 			break;
 	}
 	return columns;
@@ -40,6 +44,7 @@ async function introspectDatabase() {
 		const acc = await prevPromise;
 		const columns = await getColumns.call(this, table);
 		if (table.startsWith('array_')) {
+			if (columns.length === 0) return acc;
 			const valueColumn = columns.filter(column => column.name === 'value')[0];
 			acc[table.split('_')[1]].properties[table.split('_')[2]] = {
 				type: require('./types').getStandardType(valueColumn.datatype),
@@ -66,6 +71,7 @@ async function introspectDatabase() {
 						length: column.length
 					};
 				}
+				return column;
 			});
 		}
 		return acc;
@@ -78,9 +84,13 @@ async function introspectDatabase() {
 
 async function hasTable(tableName) {
 	if (Array.isArray(tableName)) {
-		return await Promise.all(
-			tableName.map(async each => await hasTable.call(this, each))
+		const res = await Promise.all(
+			tableName.map(async each => {
+				const eachHasTable = await hasTable.call(this, each);
+				return eachHasTable;
+			})
 		);
+		return res;
 	}
 	const rows = await getTables.call(this);
 	return rows.includes(tableName);
@@ -90,9 +100,17 @@ async function dropAllTables() {
 	const rows = await getTables.call(this);
 	if (rows.length > 0) {
 		await Promise.all(
-			rows.map(async row => await dropForeigns.call(this, row))
+			rows.map(async row => {
+				const res = await dropForeigns.call(this, row);
+				return res;
+			})
 		);
-		await Promise.all(rows.map(async row => await dropTable.call(this, row)));
+		await Promise.all(
+			rows.map(async row => {
+				const res = await dropTable.call(this, row);
+				return res;
+			})
+		);
 	}
 	return true;
 }
@@ -111,6 +129,8 @@ async function getForeigns(tableName) {
 			break;
 		case 'sqlite':
 			foreigns = await require('./lite').getForeigns.call(this, tableName);
+			break;
+		default:
 			break;
 	}
 	return foreigns;

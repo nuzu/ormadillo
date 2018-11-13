@@ -39,7 +39,8 @@ module.exports = {
 			return output;
 		},
 		hashPassword: async (input, row, table, database) => {
-			input.password = await table.methods.hash(input.password);
+			const password = await table.methods.hash(input.password);
+			input.password = password;
 			return input; // Return input to the lifecycle
 		}
 	},

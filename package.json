@@ -19,7 +19,9 @@
     "knex": "^0.15.2",
     "lodash": "^4.17.10",
     "pg": "^7.5.0",
-    "shortid": "^2.2.13"
+    "shortid": "^2.2.13",
+    "uuid": "^3.3.2",
+    "yup": "^0.26.6"
   },
   "browserslist": {
     "development": [
@@ -57,6 +59,22 @@
     "extends": [
       "plugin:jest/recommended"
     ],
-    "plugins": ["only-warn"]
+    "plugins": [
+      "only-warn"
+    ],
+    "overrides": [
+      {
+        "files": "*/models/*.js",
+        "rules": {
+          "unicorn/filename-case": [
+            "error",
+            {
+              "case": "pascalCase"
+            }
+          ],
+          "no-unused-vars": 0
+        }
+      }
+    ]
   }
 }
