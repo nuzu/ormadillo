@@ -18,6 +18,11 @@ const createMapper = (model, connection) => {
 			return res;
 		}
 
+		returnObject() {
+			const res = $mt.returnObject.call(this);
+			return res;
+		}
+
 		static async insertOne(item, insertOptions) {
 			const res = await $tt.insertOne.call(this, item, insertOptions);
 			return res;

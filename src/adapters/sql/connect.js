@@ -3,9 +3,9 @@ function connect(config) {
 		client: config.dialect,
 		connection: config.connection
 	});
-
 	this.client = knex;
 	this.raw = this.client.raw;
+	return this;
 }
 
 async function testConnection() {
@@ -22,6 +22,8 @@ async function testConnection() {
 			case 'sqlite':
 				assertion = require('./lite').testConnection(response);
 				break;
+			default:
+				break;
 		}
 		if (!assertion) {
 			throw new Error('Failed connection test');
@@ -37,6 +39,10 @@ async function testConnection() {
 function disconnect() {
 	const knex = this.client;
 	knex.destroy();
+	delete this.client;
+	delete this.raw;
+	this.isConnected = false;
+	return true;
 }
 
 module.exports = {

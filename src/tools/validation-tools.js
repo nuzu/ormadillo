@@ -1,7 +1,12 @@
 function createSchema() {
 	const yup = require('yup');
-	const {properties, columns, arrays} = this;
-	const objectShape = {};
+	const {properties, columns, arrays, relations, connection} = this;
+	const objectShape = {
+		$mapper: yup
+			.mixed()
+			.notRequired()
+			.strip()
+	};
 	for (const key in properties) {
 		if ({}.hasOwnProperty.call(properties, key)) {
 			if (properties[key] === 'columns') {
@@ -31,6 +36,8 @@ function createSchema() {
 								return yup.string().nullable();
 							case 'number':
 								return yup.number().nullable();
+							case 'object':
+								return connection[relations[key].reference].validationSchema;
 							default:
 								break;
 						}

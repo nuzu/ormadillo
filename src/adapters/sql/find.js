@@ -10,6 +10,9 @@ async function find(entry, options) {
 		.select('*')
 		.where(parsedEntry)
 		.returning('*');
+	if (arrays.length > 0) {
+		findInArrays.call(this, arrays);
+	}
 	const populatedRows = await populate.call(this, rows);
 	return populatedRows;
 }
@@ -85,6 +88,8 @@ function parseFindEntry(entry, options) {
 	return parsedInput;
 }
 
+async function findInArrays(arrays) {}
+
 async function populate(rows) {
 	const {
 		arrays,
@@ -108,10 +113,10 @@ async function populate(rows) {
 			for (const key in relations) {
 				const relation = relations[key];
 				let relationRecord;
+				let otherTable = relation.column1;
 				switch (relation.type) {
 					case 'many-to-many':
 					case 'defaultRelation':
-						let otherTable = relation.column1;
 						if (this.name === relation.column1) {
 							otherTable = relation.column2;
 						}

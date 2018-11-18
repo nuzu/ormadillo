@@ -14,7 +14,7 @@ async function insertOne(entry, insertOptions) {
 			query,
 			queryOptions
 		);
-		const item = await afterInsert.call(this, record);
+		const item = await afterInsert.call(this, record, queryOptions);
 		return {
 			success: true,
 			error: null,
@@ -135,11 +135,8 @@ async function updateOne(selector, values, updateOptions) {
 			count: 1,
 			items: [item]
 		};
-	} catch (errors) {
-		if (!Array.isArray(errors)) {
-			errors = [errors];
-		}
-		errors.forEach(error => console.log(error));
+	} catch (error) {
+		console.log(error);
 		return false;
 	}
 }
@@ -220,6 +217,7 @@ async function deleteMany(selectors, deleteOptions) {
 
 async function beforeInsert(entry, options) {
 	const {timestamps, uuid, short} = this.modelOptions;
+	const {relations} = this;
 	if (uuid) {
 		entry = addUuid(entry);
 	}
@@ -229,16 +227,9 @@ async function beforeInsert(entry, options) {
 	if (timestamps) {
 		entry = addTimestamps(entry);
 	}
-
-	const isValidated = await require('./mapper-tools').default.validate.call(
-		this,
-		entry
-	);
-	if (!isValidated) {
-		throw new Error(
-			'Unable to validate entry data. Check the console log for more information.'
-		);
-	}
+	entry = await require('./mapper-tools').default.validate.call(this, entry, {
+		isValid: false
+	});
 
 	return [entry, options];
 }
@@ -250,13 +241,19 @@ async function afterInsert(entry) {
 }
 
 function addUuid(entry, options) {
-	entry.uuid = require('uuid/v4')();
+	let uuid = 'uuid';
+	if (options.uuidLabel && typeof options.uuidLabel === 'string')
+		uuid = options.uuidLabel;
+	entry[uuid] = require('uuid/v4')();
 	return entry;
 }
 
 function addShort(entry, options) {
-	entry.short = require('shortid').generate();
-	return short;
+	let short = 'short';
+	if (options.shortLabel && typeof options.shortLabel === 'string')
+		short = options.shortLabel;
+	entry[short] = require('shortid').generate();
+	return entry;
 }
 
 function addTimestamps(entry) {
@@ -265,7 +262,11 @@ function addTimestamps(entry) {
 	return entry;
 }
 
-function relateBeforeInsert(entry) {}
+/**
+ * This adds OR finds the relations that need to be inserted OR found
+ * before the parent entry is inserted into the database
+ */
+function relateBefore(entry) {}
 
 export default {
 	insertOne,

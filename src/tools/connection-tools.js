@@ -13,9 +13,10 @@ const chooseTools = dialect => {
 };
 
 export default {
-	config(dbConfig, name) {
+	config(dbConfig) {
 		this.isConnected = false;
-		this.name = name;
+		this.name = dbConfig.name;
+		this.dbConfig = dbConfig;
 		this.dialect = dbConfig.dialect;
 		this._dbOptions = dbConfig.options;
 		this._tools = chooseTools(this.dialect);
@@ -23,8 +24,9 @@ export default {
 			this.pgSchema = dbConfig.connection.schema;
 		}
 	},
-	connect(config) {
+	connect() {
 		const tools = this._tools;
+		const config = this.dbConfig;
 		if (!tools) {
 			return console.log(
 				'Unable to connect because invalid dialect access is being attempted'

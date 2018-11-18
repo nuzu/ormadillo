@@ -16,7 +16,7 @@ function configMapper(model, connection) {
 	this.arrays = [];
 	this.primary = 'id';
 	parseProperties.call(this);
-	this.schema = require('./validation-tools').createSchema.call(this);
+	this.validationSchema = require('./validation-tools').createSchema.call(this);
 }
 
 function sortIntoType(name, value) {
@@ -58,7 +58,9 @@ function parseProperties() {
 	this.idTaken = false;
 
 	for (const key in rawProps) {
-		sortIntoType.call(this, key, rawProps[key]);
+		if ({}.hasOwnProperty.call(rawProps, key)) {
+			sortIntoType.call(this, key, rawProps[key]);
+		}
 	}
 	if (!this.idTaken) {
 		addIDProperty.call(this, this.primary);
@@ -128,7 +130,7 @@ function parseProperty(rawProp, name) {
 	};
 	property.type = parsePropType(rawProp.type);
 
-	// TODO: better selection to allow for custom error messages
+	// @todo: better selection to allow for custom error messages
 	if (rawProp.required) {
 		this.requireds.push(name);
 		property.required = true;
@@ -203,39 +205,37 @@ function parseRelation(rawRelation, name) {
 function parseVirtual(rawVirtual, name) {
 	const property = parseProperty(rawVirtual);
 	property.type = 'virtual';
-
+	this.virtuals[name] = property;
 	return property;
 }
 
 async function validate(entry, options = {isValid: true}, cb) {
 	try {
-		let schema;
-		if (!entry) {
+		let validationSchema;
+		if (entry) {
+			({validationSchema} = this);
+		} else {
 			const {$mapper, ...rest} = this;
-			({schema} = $mapper);
+			({validationSchema} = $mapper);
 			if (rest) {
 				entry = rest;
 			}
-		} else {
-			({schema} = this);
 		}
-		const properties = this.properties || this.$mapper.properties;
 		if (typeof entry !== 'object') {
 			throw new TypeError(
 				'Unable to identify variable which is not an object.'
 			);
 		}
-		const res = schema.validateSync(entry, {strict: true});
+		const res = validationSchema.validateSync(entry, {strict: true});
 		if (options.isValid) {
 			return true;
 		}
 		if (cb) {
-			return cb(null);
+			return cb(null, res);
 		}
 		return res;
 	} catch (error) {
-		console.log('unable to validate');
-		console.log(error);
+		console.log(`ERROR: ${error.message}`);
 		return false;
 	}
 }
@@ -261,8 +261,14 @@ async function save() {
 	}
 }
 
+function returnObject() {
+	const {$mapper, ...rest} = this;
+	return rest;
+}
+
 export default {
 	configMapper,
 	validate,
-	save
+	save,
+	returnObject
 };

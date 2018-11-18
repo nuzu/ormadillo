@@ -1,5 +1,7 @@
 const ormadillo = require('../build').default;
 
+/* eslint-disable no-unused-vars */
+
 const DATABASE_POSTGRES = {
 	name: 'postgres',
 	dialect: 'postgres',
@@ -26,6 +28,8 @@ const DATABASE_SQLITE = {
 		alwaysRebuild: true
 	}
 };
+
+/* eslint-enable no-unused-vars */
 
 const config = {
 	models: {

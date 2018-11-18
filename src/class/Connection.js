@@ -4,11 +4,10 @@ import connectionTools from '../tools/connection-tools';
 import buildTools from '../tools/build-tools';
 
 class Connection {
-	constructor(config, name) {
+	constructor(config) {
 		try {
-			connectionTools.config.call(this, config, name);
-			connectionTools.connect.call(this, config);
-
+			connectionTools.config.call(this, config);
+			connectionTools.connect.call(this);
 			connectionTools.testConnection.call(this);
 			connectionTools.introspectDatabase.call(this);
 		} catch (error) {
@@ -36,22 +35,28 @@ class Connection {
 		return res;
 	}
 
-	async connect() {}
+	async connect(config) {
+		if (config) connectionTools.config.call(this, config);
+		await connectionTools.connect.call(this);
+		await connectionTools.testConnection.call(this);
+		return this;
+	}
 
 	async disconnect() {
-		const res = await connectionTools.disconnect.call(this);
-		return res;
+		await connectionTools.disconnect.call(this);
+		return this;
 	}
 
 	async createTable(mapper) {
-		await buildTools.createTable.call(this, mapper);
-		return mapper;
+		const table = await buildTools.createTable.call(this, mapper);
+		this[table.name] = table;
+		return this;
 	}
 
-	async dropTable(tableName) {}
-
-	async insert(tableName, item, insertOptions) {
-		console.log(this);
+	async dropTable(tableName) {
+		const res = await this.buildTools.dropTable.call(this, tableName);
+		if (this[tableName] && res) delete this[tableName];
+		return this;
 	}
 }
 

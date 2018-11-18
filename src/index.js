@@ -19,7 +19,7 @@ const createMappers = (models, connection) => {
 };
 
 const createConnection = dbConfig => {
-	const connection = new Connection(dbConfig, dbConfig.name);
+	const connection = new Connection(dbConfig);
 	return connection;
 };
 

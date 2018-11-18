@@ -2,7 +2,10 @@ async function insertOne(entry, options) {
 	const {client} = this.connection;
 	if (!client) throw require('./error').NO_CLIENT;
 	const tableName = this.name;
-	const {arrays, parsedEntry, relations} = parseInsertEntry.call(this, entry);
+	const {arrays, parsedEntry, relations, parsedOptions} = await parseInsertEntry.call(
+		this,
+		entry
+	);
 	let row;
 	/* eslint-disable no-await-in-loop */
 	for (const key in relations.joinColumn) {
@@ -15,7 +18,7 @@ async function insertOne(entry, options) {
 	}
 	/* eslint-enable no-await-in-loop */
 	const isEmpty = require('lodash/isEmpty');
-	const returning = options && options.returning ? options.returning : '*';
+	const returning = parsedOptions.returning ? parsedOptions.returning : '*';
 	if (!isEmpty(parsedEntry)) {
 		[row] = await client(tableName)
 			.insert(parsedEntry)
@@ -52,13 +55,14 @@ async function insertMany(entries, options) {
 	return items;
 }
 
-function parseInsertEntry(entry, _options) {
-	const {arrays, columns, properties, relations} = this;
+async function parseInsertEntry(entry, options) {
+	const {arrays, columns, properties, relations, connection} = this;
 	const tableName = this.name;
 	const reduce = require('lodash/reduce');
-	const parsedInput = reduce(
+	const parsedInput = await reduce(
 		entry,
-		(acc, value, key) => {
+		async (accPromise, value, key) => {
+			const acc = await accPromise;
 			if (arrays.includes(key)) {
 				const acceptedType = require('./types').getJavascriptType(
 					columns[key].type
@@ -95,6 +99,13 @@ function parseInsertEntry(entry, _options) {
 				if (typeof value === 'object') {
 					if (value.id) {
 						acc.parsedEntry[key] = value.id;
+					} else {
+						const {id} = await findOrCreate.call(
+							connection,
+							relations[key].reference,
+							value
+						);
+						acc.parsedEntry[key] = id;
 					}
 				} else {
 					acc.parsedEntry[key] = value;
@@ -107,18 +118,37 @@ function parseInsertEntry(entry, _options) {
 			}
 			return acc;
 		},
-		{
+		Promise.resolve({
 			arrays: [],
 			relations: {
 				joinTable: {},
-				joinColumn: {},
-				createFirst: {}
+				joinColumn: {}
 			},
 			parsedEntry: {},
-			insertIntoTable: {}
-		}
+			insertIntoTable: {},
+			parsedOptions: {
+				...options
+			}
+		})
 	);
 	return parsedInput;
+}
+
+async function findOrCreate(tableName, value) {
+	const {client} = this;
+	if (value.returnObject) {
+		value = value.returnObject();
+	}
+	const res = await client
+		.from(tableName)
+		.select('*')
+		.where(value)
+		.returning('*');
+	if (res.length > 0) {
+		return res[0];
+	}
+	const newInsert = await insertOne.call(this[tableName], value);
+	return newInsert;
 }
 
 async function insertArrays(arrays, id) {
@@ -196,7 +226,10 @@ async function updateOne(selector, values, options) {
 		console.log('No client available');
 	}
 	const tableName = this.name;
-	const {arrays, parsedEntry, relations} = parseInsertEntry.call(this, values);
+	const {arrays, parsedEntry, relations} = await parseInsertEntry.call(
+		this,
+		values
+	);
 	let rows = [];
 	const isEmpty = require('lodash/isEmpty');
 	if (isEmpty(parsedEntry)) {

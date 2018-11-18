@@ -9,8 +9,8 @@ describe('set up environment', () => {
 	it('database is connected', () => {
 		expect(db.isConnected).toBe(true);
 	});
-	it('Post mapper created', () => {
-		expect(db).toHaveProperty('Post');
+	it('Book mapper created', () => {
+		expect(db).toHaveProperty('Book');
 	});
 	it('Author mapper created', () => {
 		expect(db).toHaveProperty('Author');
@@ -18,10 +18,10 @@ describe('set up environment', () => {
 });
 
 describe('insert/create', () => {
-	let Post;
+	let Book;
 	let Author;
 	beforeAll(() => {
-		({Post, Author} = db);
+		({Book, Author} = db);
 	});
 	it('inserted many authors', async () => {
 		expect.assertions(1);
@@ -41,35 +41,134 @@ describe('insert/create', () => {
 
 	it('expect validation to fail', async () => {
 		expect.assertions(1);
-		const post = new Post({random: 'not random'});
+		const post = new Book({random: 'not random'});
 		const validated = await post.validate();
 		expect(validated).toBe(false);
 	});
 
-	it('expect validation to succeed', async () => {
+	it('expect validation to succeed (reference by id)', async () => {
 		expect.assertions(1);
-		const post = new Post({title: 'Javascript works', author: 2});
-		const validated = await post.validate();
+		const book = new Book({title: 'The Invasion', author: 2});
+		const validated = await book.validate();
 		expect(validated).toBe(true);
 	});
 
-	it('insert and update by save', async () => {
-		expect.assertions(2);
-		const post = new Post({title: 'Javascript works', author: 2});
-		const savedPost = await post.save();
-		expect(savedPost.title).toBe(post.title);
-		savedPost.title = 'Python works too';
-		const updatedPost = await savedPost.save();
-		expect(updatedPost.title).toBe('Python works too');
+	it('expect validation to succeed (reference by object)', async () => {
+		expect.assertions(1);
+		const author = new Author({name: 'RL Stine'});
+		const book = new Book({title: 'Cuckoo Clock of Doom', author});
+		const validated = await book.validate();
+		expect(validated).toBe(true);
 	});
 
-	it('insert by insertOne', async () => {
-		expect.assertions(1);
-		const insertedPost = await Post.insertOne({
-			title: 'When worlds collide',
-			author: 1
+	it('insert and update by save (reference by id)', async () => {
+		expect.assertions(2);
+		const book = new Book({title: 'Visitor', author: 2});
+		const saved = await book.save();
+		expect(saved.title).toBe(book.title);
+		saved.title = 'The Visitor';
+		const updated = await saved.save();
+		expect(updated.title).toBe('The Visitor');
+	});
+
+	it('insert and update by save (reference by new object instance)', async () => {
+		expect.assertions(3);
+		const author = new Author({
+			name: 'Eoin Colfer'
 		});
-		expect(insertedPost.item.title).toBe('When worlds collide');
+		const book = new Book({title: 'The Artemis Fowl', author});
+		const saved = await book.save();
+		expect(saved.title).toBe(book.title);
+		expect(saved.author.name).toBe('Eoin Colfer');
+		saved.title = 'Artemis Fowl';
+		const updated = await saved.save();
+		expect(updated.title).toBe('Artemis Fowl');
+	});
+
+	it('insert and update by save (reference by existing object instance)', async () => {
+		expect.assertions(3);
+		const author = new Author({
+			name: 'JK Rowling'
+		});
+		const book = new Book({
+			title: `Harry Potter and the Sorcerer's Stone`,
+			author
+		});
+		const saved = await book.save();
+		expect(saved.title).toBe(book.title);
+		expect(saved.author.name).toBe('JK Rowling');
+		saved.title = `Harry Potter and the Philosopher's Stone`;
+		const updated = await saved.save();
+		expect(updated.title).toBe(`Harry Potter and the Philosopher's Stone`);
+	});
+
+	it('insert and update by save (reference by existing object NOT instance)', async () => {
+		expect.assertions(3);
+		const author = {
+			name: 'JK Rowling'
+		};
+		const book = new Book({
+			title: `Harry Potter and the Chamber of Secrets`,
+			author
+		});
+		const saved = await book.save();
+		expect(saved.title).toBe(book.title);
+		expect(saved.author.name).toBe('JK Rowling');
+		saved.title = `Harry Potter and the Chamber of Secrets`;
+		const updated = await saved.save();
+		expect(updated.title).toBe(`Harry Potter and the Chamber of Secrets`);
+	});
+
+	it('insert by insertOne (reference by id)', async () => {
+		expect.assertions(2);
+		const payload = await Book.insertOne({
+			title: 'The Encounter',
+			author: 2
+		});
+		expect(payload.item.title).toBe('The Encounter');
+		expect(payload.item.author.id).toBe(2);
+	});
+
+	it('insert by insertOne (reference by new object instance)', async () => {
+		expect.assertions(3);
+		const author = new Author({
+			name: 'Roald Dahl'
+		});
+		const payload = await Book.insertOne({
+			title: 'Matilda',
+			author
+		});
+		expect(payload.item.title).toBe('Matilda');
+		expect(payload.item.author.id).toBeDefined();
+		expect(payload.item.author.name).toBe('Roald Dahl');
+	});
+
+	it('insert by insertOne (reference by new object NOT instance)', async () => {
+		expect.assertions(3);
+		const author = {
+			name: 'Enid Blyton'
+		};
+		const payload = await Book.insertOne({
+			title: 'Five on a Treasure Island',
+			author
+		});
+		expect(payload.item.title).toBe('Five on a Treasure Island');
+		expect(payload.item.author.id).toBeDefined();
+		expect(payload.item.author.name).toBe('Enid Blyton');
+	});
+
+	it('insert by insertOne (reference by existing object NOT instance)', async () => {
+		expect.assertions(3);
+		const author = {
+			name: 'KA Applegate'
+		};
+		const payload = await Book.insertOne({
+			title: 'The Message',
+			author
+		});
+		expect(payload.item.title).toBe('The Message');
+		expect(payload.item.author.id).toBeDefined();
+		expect(payload.item.author.name).toBe('KA Applegate');
 	});
 });
 
