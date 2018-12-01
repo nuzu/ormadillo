@@ -9,24 +9,25 @@ class Connection {
 			connectionTools.config.call(this, config);
 			connectionTools.connect.call(this);
 			connectionTools.testConnection.call(this);
-			connectionTools.introspectDatabase.call(this);
 		} catch (error) {
 			console.log(error.message);
 		}
 	}
 
 	async build(mappers) {
+		if (!this.structure) await connectionTools.introspectDatabase.call(this);
 		if (this._dbOptions.alwaysRebuild) {
 			const res = await buildTools.dropAllTables.call(this);
 			if (res) {
 				const tables = await buildTools.createTables.call(this, mappers);
 				await Promise.all(
 					tables.map(table => {
-						this[table.name] = table;
+						this.repository[table.name] = table;
 						return table;
 					})
 				);
 			}
+		} else {
 		}
 	}
 
@@ -49,14 +50,21 @@ class Connection {
 
 	async createTable(mapper) {
 		const table = await buildTools.createTable.call(this, mapper);
+		this.repository[table.name] = table;
 		this[table.name] = table;
 		return this;
 	}
 
 	async dropTable(tableName) {
+		const {repository} = this;
 		const res = await this.buildTools.dropTable.call(this, tableName);
-		if (this[tableName] && res) delete this[tableName];
+		if (repository[tableName] && res) delete repository[tableName];
 		return this;
+	}
+
+	async introspect() {
+		const structure = await connectionTools.introspectDatabase.call(this);
+		return structure;
 	}
 }
 

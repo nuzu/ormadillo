@@ -2,10 +2,12 @@ async function insertOne(entry, options) {
 	const {client} = this.connection;
 	if (!client) throw require('./error').NO_CLIENT;
 	const tableName = this.name;
-	const {arrays, parsedEntry, relations, parsedOptions} = await parseInsertEntry.call(
-		this,
-		entry
-	);
+	const {
+		arrays,
+		parsedEntry,
+		relations,
+		parsedOptions
+	} = await parseInsertEntry.call(this, entry);
 	let row;
 	/* eslint-disable no-await-in-loop */
 	for (const key in relations.joinColumn) {
@@ -100,7 +102,7 @@ async function parseInsertEntry(entry, options) {
 					if (value.id) {
 						acc.parsedEntry[key] = value.id;
 					} else {
-						const {id} = await findOrCreate.call(
+						const {id} = await findOrCreateOne.call(
 							connection,
 							relations[key].reference,
 							value
@@ -134,20 +136,20 @@ async function parseInsertEntry(entry, options) {
 	return parsedInput;
 }
 
-async function findOrCreate(tableName, value) {
-	const {client} = this;
+async function findOrCreateOne(tableName, value) {
+	const {client, repository} = this;
 	if (value.returnObject) {
 		value = value.returnObject();
 	}
 	const res = await client
 		.from(tableName)
 		.select('*')
-		.where(value)
-		.returning('*');
+		.returning('*')
+		.where(value);
 	if (res.length > 0) {
 		return res[0];
 	}
-	const newInsert = await insertOne.call(this[tableName], value);
+	const newInsert = await insertOne.call(repository[tableName], value);
 	return newInsert;
 }
 
@@ -198,7 +200,55 @@ async function insertIntoRelationsTables(relation, rowNumber) {
 
 async function insertJoinTableRelations(relation, rowNumber) {
 	const {client} = this.connection;
+	/// if relation.value is an Array ?
 	if (typeof relation.value === 'object') {
+		let insertValue;
+		if (Array.isArray(relation.value)) {
+			insertValue = await Promise.all(
+				relation.value.map(async each => {
+					const eachInsertValue = {};
+					if (relation.column1 === this.name) {
+						const column2value = await findOrCreateOne.call(
+							this.connection,
+							relation.column2,
+							each
+						);
+						eachInsertValue[`${relation.column1}_id`] = rowNumber;
+						eachInsertValue[`${relation.column2}_id`] = column2value.id;
+					} else if (relation.column2 === this.name) {
+						const column1value = await findOrCreateOne.call(
+							this.connection,
+							relation.column1,
+							relation.value
+						);
+						eachInsertValue[`${relation.column2}_id`] = rowNumber;
+						eachInsertValue[`${relation.column1}_id`] = column1value.id;
+					}
+					return eachInsertValue;
+				})
+			);
+			await client(relation.targetTable).insert(insertValue);
+		} else {
+			insertValue = {};
+			if (relation.column1 === this.name) {
+				const column2value = await findOrCreateOne.call(
+					this.connection,
+					relation.column2,
+					relation.value
+				);
+				insertValue[`${relation.column1}_id`] = rowNumber;
+				insertValue[`${relation.column2}_id`] = column2value.id;
+			} else if (relation.column2 === this.name) {
+				const column1value = await findOrCreateOne.call(
+					this.connection,
+					relation.column1,
+					relation.value
+				);
+				insertValue[`${relation.column2}_id`] = rowNumber;
+				insertValue[`${relation.column1}_id`] = column1value.id;
+			}
+			await client(relation.targetTable).insert(insertValue);
+		}
 	} else {
 		const insertValue = {};
 		if (relation.column1 === this.name) {

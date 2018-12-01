@@ -266,7 +266,6 @@ function addTimestamps(entry) {
  * This adds OR finds the relations that need to be inserted OR found
  * before the parent entry is inserted into the database
  */
-function relateBefore(entry) {}
 
 export default {
 	insertOne,

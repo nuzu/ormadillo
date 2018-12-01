@@ -10,18 +10,19 @@ describe('set up environment', () => {
 		expect(db.isConnected).toBe(true);
 	});
 	it('Book mapper created', () => {
-		expect(db).toHaveProperty('Book');
+		expect(db.repository).toHaveProperty('Book');
 	});
 	it('Author mapper created', () => {
-		expect(db).toHaveProperty('Author');
+		expect(db.repository).toHaveProperty('Author');
 	});
 });
 
 describe('insert/create', () => {
 	let Book;
 	let Author;
+	let Tag;
 	beforeAll(() => {
-		({Book, Author} = db);
+		({Book, Author, Tag} = db.repository);
 	});
 	it('inserted many authors', async () => {
 		expect.assertions(1);
@@ -48,7 +49,11 @@ describe('insert/create', () => {
 
 	it('expect validation to succeed (reference by id)', async () => {
 		expect.assertions(1);
-		const book = new Book({title: 'The Invasion', author: 2});
+		const book = new Book({
+			title: 'The Invasion',
+			author: 2,
+			tags: [{value: 'Animorphs'}]
+		});
 		const validated = await book.validate();
 		expect(validated).toBe(true);
 	});
@@ -107,9 +112,13 @@ describe('insert/create', () => {
 		const author = {
 			name: 'JK Rowling'
 		};
+		const tag = {
+			value: 'Harry Potter'
+		};
 		const book = new Book({
 			title: `Harry Potter and the Chamber of Secrets`,
-			author
+			author,
+			tags: [tag]
 		});
 		const saved = await book.save();
 		expect(saved.title).toBe(book.title);
@@ -176,7 +185,7 @@ describe('find/query', () => {
 	let Post;
 	let Author;
 	beforeAll(async done => {
-		({Post, Author} = db);
+		({Post, Author} = db.repository);
 		await Post.insertOne({
 			title: 'No one is safe',
 			author: 2,
@@ -204,7 +213,7 @@ describe('update/delete', () => {
 	let Post;
 	let Author;
 	beforeAll(async done => {
-		({Post, Author} = db);
+		({Post, Author} = db.repository);
 		await Post.insertOne({
 			title: 'The Cuckoo Clock of Doom',
 			author: 3,

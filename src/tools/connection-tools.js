@@ -18,6 +18,8 @@ export default {
 		this.name = dbConfig.name;
 		this.dbConfig = dbConfig;
 		this.dialect = dbConfig.dialect;
+		this.repository = {};
+		this.repo = this.repository;
 		this._dbOptions = dbConfig.options;
 		this._tools = chooseTools(this.dialect);
 		if (dbConfig.connection.schema) {
@@ -47,7 +49,7 @@ export default {
 			return null;
 		}
 		const structure = await tools.introspectDatabase.call(this);
-		this._dbStructure = structure;
+		this.structure = structure;
 		return structure;
 	},
 	async disconnect() {

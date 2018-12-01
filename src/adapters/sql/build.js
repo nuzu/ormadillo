@@ -31,7 +31,11 @@ async function getColumns(tableName) {
 async function introspectDatabase() {
 	const tables = await getTables.call(this);
 	const tableObject = tables.reduce((acc, table) => {
-		if (!table.startsWith('array_')) {
+		if (
+			!table.startsWith('array_') &&
+			!table.startsWith('relation_') &&
+			!table.startsWith('junction_')
+		) {
 			acc[table] = {
 				name: table,
 				properties: {},
@@ -52,6 +56,18 @@ async function introspectDatabase() {
 				array: true,
 				required: valueColumn.nullable === 'NO',
 				length: valueColumn.length
+			};
+		} else if (table.startsWith('relation_') || table.startsWith('junction_')) {
+			const [, table1, table2] = table.split('_');
+			acc[table1].properties[table2] = {
+				type: 'Reference',
+				dbType: 'id',
+				reference: table2
+			};
+			acc[table2].properties[table1] = {
+				type: 'Reference',
+				dbType: 'id',
+				reference: table1
 			};
 		} else {
 			columns.map(column => {

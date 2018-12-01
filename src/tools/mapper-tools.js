@@ -212,7 +212,7 @@ function parseVirtual(rawVirtual, name) {
 async function validate(entry, options = {isValid: true}, cb) {
 	try {
 		let validationSchema;
-		if (entry) {
+		if (entry && entry !== '') {
 			({validationSchema} = this);
 		} else {
 			const {$mapper, ...rest} = this;

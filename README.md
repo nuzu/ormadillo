@@ -115,7 +115,7 @@ let config = ...
 
 const connect = async () => {
     let {db} = await orm(config),
-        Post = db.Post
+        {Post} = db.repository
     
     await Post.insertMany({...})
     return

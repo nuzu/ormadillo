@@ -42,6 +42,8 @@ export default async config => {
 	const db = createConnection(config.database);
 	const models = loadModels(config);
 	const mappers = createMappers(models, db);
+	const structure = await db.introspect();
+	console.log(structure);
 	await db.build(mappers);
 	return {
 		db,

@@ -20,8 +20,9 @@ module.exports = {
 			relation: 'many-to-one'
 		},
 		tags: {
-			type: 'String',
-			array: true
+			type: 'Reference',
+			relation: 'many-to-many',
+			reference: 'Tag'
 		}
 	},
 	options: {

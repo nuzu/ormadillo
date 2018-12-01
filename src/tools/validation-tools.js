@@ -29,20 +29,36 @@ function createSchema() {
 				].includes(properties[key])
 			) {
 				objectShape[key] = yup.lazy(value => {
+					let a = yup
+						.mixed()
+						.notRequired()
+						.nullable();
 					if (value !== undefined) {
 						const valueType = typeof value;
 						switch (valueType) {
 							case 'string':
-								return yup.string().nullable();
+								a = yup.string().nullable();
+								break;
 							case 'number':
-								return yup.number().nullable();
+								a = yup.number().nullable();
+								break;
 							case 'object':
-								return connection[relations[key].reference].validationSchema;
+								a =
+									connection.repository[relations[key].reference]
+										.validationSchema;
+								break;
 							default:
 								break;
 						}
+						if (
+							['oneToMany', 'manyToMany', 'defaultRelation'].includes(
+								properties[key]
+							)
+						) {
+							a = yup.array(a);
+						}
 					}
-					return yup.mixed().notRequired();
+					return a;
 				});
 			}
 		}

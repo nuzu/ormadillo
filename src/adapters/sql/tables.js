@@ -50,7 +50,7 @@ async function formRelations(mapper) {
 				case 'many-to-one':
 					relationsColumns[key] = relations[key];
 					break;
-				case 'many=tp-many':
+				case 'many-to-many':
 				case 'defaultRelation':
 					relationsTables[key] = relations[key];
 					break;

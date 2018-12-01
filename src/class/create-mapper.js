@@ -8,8 +8,8 @@ const createMapper = (model, connection) => {
 			this.$mapper = this.constructor;
 		}
 
-		async validate(entry) {
-			const res = await $mt.validate.call(this, entry);
+		async validate(entry, options) {
+			const res = await $mt.validate.call(this, entry, options);
 			return res;
 		}
 
