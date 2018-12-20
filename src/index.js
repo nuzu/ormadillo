@@ -40,10 +40,10 @@ export {loadModels, createMappers, createConnection, expressOrm};
 
 export default async config => {
 	const db = createConnection(config.database);
+	await db.connect();
 	const models = loadModels(config);
 	const mappers = createMappers(models, db);
-	const structure = await db.introspect();
-	console.log(structure);
+	// Const structure = await db.introspect();
 	await db.build(mappers);
 	return {
 		db,

@@ -1,25 +1,55 @@
 'use strict';
 
-import connectionTools from '../tools/connection-tools';
-import buildTools from '../tools/build-tools';
-
 class Connection {
 	constructor(config) {
-		try {
-			connectionTools.config.call(this, config);
-			connectionTools.connect.call(this);
-			connectionTools.testConnection.call(this);
-		} catch (error) {
-			console.log(error.message);
+		this._init(config);
+	}
+
+	_init(config) {
+		this.isConnected = false;
+		this.name = config.name;
+		this.config = config;
+		this.connection = config.connection;
+		this.dialect = config.dialect;
+		this.repository = {};
+		this.repo = this.repository;
+		this._dbOptions = config.options;
+		this.tools = this._tools = chooseTools(config.dialect);
+		if (config.connection.schema) {
+			this.pgSchema = config.connection.schema;
 		}
 	}
 
+	async connect(config) {
+		if (config) this._init(config);
+		this.tools.connect.call(this);
+		const res = await this.testConnection();
+		if (res) this.isConnected = true;
+		return this;
+	}
+
+	async testConnection() {
+		const res = await this.tools.testConnection.call(this);
+		return res;
+	}
+
+	disconnect() {
+		this.tools.disconnect.call(this);
+		this.isConnected = false;
+		return this;
+	}
+
+	async hasTable(tableName) {
+		const res = await this.tools.hasTable.call(this, tableName);
+		return res;
+	}
+
 	async build(mappers) {
-		if (!this.structure) await connectionTools.introspectDatabase.call(this);
+		if (!this.structure) await this.tools.introspectDatabase.call(this);
 		if (this._dbOptions.alwaysRebuild) {
-			const res = await buildTools.dropAllTables.call(this);
+			const res = await this.dropAllTables();
 			if (res) {
-				const tables = await buildTools.createTables.call(this, mappers);
+				const tables = await this.createTables(mappers);
 				await Promise.all(
 					tables.map(table => {
 						this.repository[table.name] = table;
@@ -31,41 +61,63 @@ class Connection {
 		}
 	}
 
-	async hasTable(tableName) {
-		const res = await buildTools.hasTable.call(this, tableName);
-		return res;
-	}
-
-	async connect(config) {
-		if (config) connectionTools.config.call(this, config);
-		await connectionTools.connect.call(this);
-		await connectionTools.testConnection.call(this);
-		return this;
-	}
-
-	async disconnect() {
-		await connectionTools.disconnect.call(this);
-		return this;
-	}
-
 	async createTable(mapper) {
-		const table = await buildTools.createTable.call(this, mapper);
-		this.repository[table.name] = table;
-		this[table.name] = table;
+		const table = await this.tools.createTable.call(this, mapper);
+		console.log(`Created mapper into table ${mapper.name}`);
+		this.repository[mapper.name] = mapper;
+		this[mapper.name] = mapper;
 		return this;
+	}
+
+	async createTables(mappers) {
+		if (!Array.isArray(mappers)) {
+			mappers = [mappers];
+		}
+		mappers = await Promise.all(
+			mappers.map(async mapper => {
+				const response = await this.hasTable(mapper.name);
+				console.log(`${mapper.name} does ${response ? '' : 'not'} exist`);
+				if (!response) {
+					await this.createTable(mapper);
+				}
+				return mapper;
+			})
+		);
+		await this.tools.formAllRelations.call(this, mappers);
+		return mappers;
+	}
+
+	async dropAllTables() {
+		const res = await this.tools.dropAllTables.call(this);
+		return res;
 	}
 
 	async dropTable(tableName) {
 		const {repository} = this;
-		const res = await this.buildTools.dropTable.call(this, tableName);
+		const res = await this.tools.dropTable.call(this, tableName);
 		if (repository[tableName] && res) delete repository[tableName];
 		return this;
 	}
 
 	async introspect() {
-		const structure = await connectionTools.introspectDatabase.call(this);
+		const structure = await this.tools.introspectDatabase.call(this);
 		return structure;
 	}
 }
+
+const chooseTools = dialect => {
+	switch (dialect) {
+		case 'postgres':
+			return require('../adapters/pg');
+		case 'mysql':
+		case 'sqlite':
+		case 'mssql':
+			return require('../adapters/sql');
+		case 'mongodb':
+			return require('../adapters/mongo');
+		default:
+			throw new Error('This dialect is not supported yet');
+	}
+};
 
 export default Connection;

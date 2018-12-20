@@ -1,15 +1,70 @@
 async function find(entry, options) {
-	const {client} = this.connection;
+	const {client, dialect, raw} = this.connection;
 	if (!client) {
 		console.log('No client available');
 	}
 	const tableName = this.name;
 	const {parsedEntry, arrays} = parseFindEntry.call(this, entry);
-	const rows = await client
+	const query = client
 		.from(tableName)
-		.select('*')
-		.where(parsedEntry)
-		.returning('*');
+		.select(`${tableName}.*`)
+		.where(parsedEntry);
+	if (this.arrays.length > 0) {
+		this.arrays.map(array => {
+			query
+				.join(
+					`array_${tableName}_${array}`,
+					`array_${tableName}_${array}.key`,
+					`${tableName}.id`
+				)
+				.select(
+					raw(
+						require('./sql').groupConcat[dialect](
+							`array_${tableName}_${array}`,
+							array,
+							'value'
+						)
+					)
+				);
+		});
+	}
+	const relationKeys = Object.keys(this.relations);
+	relationKeys.map(relKey => {
+		const relation = this.relations[relKey];
+		return;
+		let otherTable;
+		switch (relation.type) {
+			case 'many-to-many':
+			case 'defaultRelation':
+				otherTable =
+					relation.column1 === tableName ? relation.column2 : relation.column1;
+				query
+					.join(
+						relation.targetTable,
+						`${relation.targetTable}.${this.name}_id`,
+						`${tableName}.id`
+					)
+					.join(
+						otherTable,
+						`${otherTable}.id`,
+						`${relation.targetTable}.${otherTable}_id`
+					)
+					.select(
+						raw(
+							require('./sql').groupConcat[dialect](
+								otherTable,
+								`rel_${relKey}`,
+								'id'
+							)
+						)
+					);
+				break;
+			default:
+				break;
+		}
+	});
+
+	const rows = await query.groupBy(`${tableName}.id`).returning('*');
 	if (arrays.length > 0) {
 		findInArrays.call(this, arrays);
 	}
@@ -29,6 +84,17 @@ function parseFindEntry(entry, options) {
 	const {arrays, columns, properties, relations} = this;
 	const tableName = this.name;
 	const reduce = require('lodash/reduce');
+	if (Array.isArray(entry)) return {parsedEntry: entry};
+	if (typeof entry === 'string' || typeof entry === 'number')
+		return {
+			parsedEntry: {[`${tableName}.id`]: entry},
+			arrays: [],
+			relations: {
+				joinTable: {},
+				joinColumn: {},
+				createFirst: {}
+			}
+		};
 	const parsedInput = reduce(
 		entry,
 		function(acc, value, key) {
@@ -92,23 +158,12 @@ async function findInArrays(arrays) {}
 
 async function populate(rows) {
 	const {
-		arrays,
 		relations,
-		connection: {client}
+		connection: {client},
+		name
 	} = this;
 	const populatedRows = await Promise.all(
 		rows.map(async row => {
-			await Promise.all(
-				arrays.map(async array => {
-					const arrayRecord = await client
-						.from(`array_${this.name}_${array}`)
-						.select('value')
-						.where({key: row.id})
-						.returning('*')
-						.map(record => record.value);
-					row[array] = arrayRecord;
-				})
-			);
 			/* eslint-disable no-await-in-loop */
 			for (const key in relations) {
 				const relation = relations[key];
@@ -117,7 +172,7 @@ async function populate(rows) {
 				switch (relation.type) {
 					case 'many-to-many':
 					case 'defaultRelation':
-						if (this.name === relation.column1) {
+						if (name === relation.column1) {
 							otherTable = relation.column2;
 						}
 						relationRecord = await client
@@ -129,6 +184,7 @@ async function populate(rows) {
 								`${relation.targetTable}.${otherTable}_id`,
 								`${otherTable}.id`
 							);
+						console.log(relationRecord);
 						row[key] = relationRecord;
 						break;
 					case 'one-to-one':

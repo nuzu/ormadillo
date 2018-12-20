@@ -103,6 +103,4 @@ function getYupType(type) {
 	return false;
 }
 
-module.exports = {
-	createSchema
-};
+export default createSchema;

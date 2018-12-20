@@ -280,19 +280,19 @@ async function updateOne(selector, values, options) {
 		this,
 		values
 	);
-	let rows = [];
+	let item;
 	const isEmpty = require('lodash/isEmpty');
 	if (isEmpty(parsedEntry)) {
-		rows = await require('./find').find.call(this, selector);
-		console.log(rows);
+		item = await require('./find').findOne.call(this, selector);
+		console.log(item);
 	} else {
-		rows = await client(tableName)
+		const [queryId] = await client(tableName)
 			.where(selector)
 			.update(parsedEntry)
-			.returning('*');
+			.returning('id');
+		item = await require('./find').findOne.call(this, queryId);
 	}
-	const [populatedRow] = await require('./find').populate.call(this, rows);
-	return populatedRow;
+	return item;
 }
 
 async function updateMany(selectorsArray, updatedValues, options) {
