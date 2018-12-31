@@ -1,5 +1,7 @@
 'use strict';
 
+import createMapper from './create-mapper';
+
 class Connection {
 	constructor(config) {
 		this._init(config);
@@ -14,7 +16,7 @@ class Connection {
 		this.repository = {};
 		this.repo = this.repository;
 		this._dbOptions = config.options;
-		this.tools = this._tools = chooseTools(config.dialect);
+		this.tools = chooseTools(config.dialect);
 		if (config.connection.schema) {
 			this.pgSchema = config.connection.schema;
 		}
@@ -45,7 +47,6 @@ class Connection {
 	}
 
 	async build(mappers) {
-		if (!this.structure) await this.tools.introspectDatabase.call(this);
 		if (this._dbOptions.alwaysRebuild) {
 			const res = await this.dropAllTables();
 			if (res) {
@@ -57,12 +58,20 @@ class Connection {
 					})
 				);
 			}
-		} else {
+		} else if (this._dbOptions.buildFromDatabase) {
+			const structure = this.structure || (await this.introspect());
+			console.log(JSON.stringify(structure));
+			Object.keys(structure.definitions).forEach(key => {
+				this.repository[key] = createMapper(structure.definitions[key], this);
+			});
+		} else if (this._dbOptions.suggestMigrations) {
+			const structure = this.structure || (await this.introspect());
+			console.log(structure);
 		}
 	}
 
 	async createTable(mapper) {
-		const table = await this.tools.createTable.call(this, mapper);
+		await this.tools.createTable.call(this, mapper);
 		console.log(`Created mapper into table ${mapper.name}`);
 		this.repository[mapper.name] = mapper;
 		this[mapper.name] = mapper;
@@ -101,6 +110,7 @@ class Connection {
 
 	async introspect() {
 		const structure = await this.tools.introspectDatabase.call(this);
+		this.structure = structure;
 		return structure;
 	}
 }

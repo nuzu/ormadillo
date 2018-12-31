@@ -5,7 +5,6 @@ const createMapper = (model, connection) => {
 	class Mapper {
 		constructor(rawEntry) {
 			Object.assign(this, rawEntry);
-			this.$mapper = this.constructor;
 		}
 
 		async validate(entry, options = {isValid: true}, cb) {
@@ -14,8 +13,8 @@ const createMapper = (model, connection) => {
 				if (entry && entry !== '') {
 					({validationSchema} = this);
 				} else {
-					const {$mapper, ...rest} = this;
-					({validationSchema} = $mapper);
+					const {...rest} = this;
+					({validationSchema} = this.constructor);
 					if (rest) {
 						entry = rest;
 					}
@@ -41,17 +40,21 @@ const createMapper = (model, connection) => {
 
 		async save() {
 			try {
-				const {$mapper, ...entry} = this;
+				const {...entry} = this;
+				const Mapper = this.constructor;
 				let res;
-				if (entry[$mapper.primary]) {
+				if (entry[Mapper.primary]) {
 					// Could do it for any unique value
 					const selector = {
-						[$mapper.primary]: entry[$mapper.primary]
+						[Mapper.primary]: entry[this.constructor.primary]
 					};
 
-					res = await $mapper.updateOne(selector, entry);
+					res = await Mapper.updateOne(selector, entry);
 				} else {
-					res = await $mapper.insertOne(entry);
+					res = await Mapper.insertOne(entry);
+				}
+				if (res.item) {
+					Object.assign(this, res.item);
 				}
 				return res.item;
 			} catch (error) {
@@ -61,43 +64,171 @@ const createMapper = (model, connection) => {
 		}
 
 		returnObject() {
-			const {$mapper, ...rest} = this;
+			const {...rest} = this;
 			return rest;
 		}
 
-		static async insertOne(item, insertOptions) {
-			const res = await $tt.insertOne.call(this, item, insertOptions);
-			return res;
+		static async insertOne(entry, insertOptions) {
+			try {
+				const {modelOptions, connection} = this;
+				const Mapper = this;
+				if (modelOptions.timestamps) {
+					entry.createdAt = new Date();
+					entry.updatedAt = new Date();
+				}
+				if (modelOptions.uuid) {
+					const uuid = modelOptions.uuid.label || 'uuid';
+					entry[uuid] = require('uuid/v4')();
+				}
+				if (modelOptions.short) {
+					const short = modelOptions.short.label || 'short';
+					entry[short] = require('shortid').generate();
+				}
+				const query = await this.prototype.validate.call(this, entry, {
+					isValid: false,
+					type: 'insert'
+				});
+				if (!query) throw new Error('Unable to validate');
+				const record = await connection.tools.insertOne.call(
+					this,
+					query,
+					insertOptions
+				);
+				const item = new Mapper(record);
+				return {
+					success: true,
+					error: null,
+					item,
+					items: [item],
+					count: 1
+				};
+			} catch (error) {
+				console.log(error);
+				return false;
+			}
 		}
 
-		static async insertMany(items, insertOptions) {
-			const res = await $tt.insertMany.call(this, items, insertOptions);
-			return res;
+		static async insertMany(entries, insertOptions) {
+			try {
+				const Mapper = this;
+				if (!Array.isArray(entries)) {
+					entries = [entries];
+				}
+				const items0 = await this.connection.tools.insertMany.call(
+					this,
+					entries,
+					insertOptions
+				);
+				const items = items0.map(each => new Mapper(each));
+				return {
+					success: true,
+					error: null,
+					item: items[0],
+					items,
+					count: items.length
+				};
+			} catch (error) {
+				console.log(error);
+				return false;
+			}
 		}
 
-		static async find(query, findOptions) {
-			const res = await $tt.find.call(this, query, findOptions);
-			return res;
+		static async find(entry, findOptions) {
+			try {
+				const Mapper = this;
+				const items0 = await this.connection.tools.find.call(
+					this,
+					entry,
+					findOptions
+				);
+				const items = items0.map(each => new Mapper(each));
+				return {
+					success: true,
+					error: null,
+					item: items[0],
+					items,
+					count: items.length
+				};
+			} catch (error) {
+				console.log(error);
+				return false;
+			}
 		}
 
-		static async findOne(query, findOptions) {
-			const res = await $tt.findOne.call(this, query, findOptions);
-			return res;
+		static async findOne(entry, findOptions) {
+			try {
+				const Mapper = this;
+				const record = await this.connection.tools.findOne.call(
+					this,
+					entry,
+					findOptions
+				);
+				if (record) {
+					const item = new Mapper(record);
+					return {
+						success: true,
+						error: null,
+						item,
+						count: 1,
+						items: [item]
+					};
+				}
+				return {
+					success: false,
+					error: 'No record',
+					count: 0,
+					items: [],
+					item: null
+				};
+			} catch (error) {
+				console.log(error);
+				return false;
+			}
 		}
 
 		static async updateOne(selector, values, updateOptions) {
-			const res = await $tt.updateOne.call(
-				this,
-				selector,
-				values,
-				updateOptions
-			);
-			return res;
+			try {
+				const Mapper = this;
+				const item0 = await this.connection.tools.updateOne.call(
+					this,
+					selector,
+					values,
+					updateOptions
+				);
+				const item = new Mapper(item0);
+				return {
+					success: true,
+					error: null,
+					item,
+					count: 1,
+					items: [item]
+				};
+			} catch (error) {
+				console.log(error);
+				return false;
+			}
 		}
 
 		static async updateMany(updateArray, updateOptions) {
-			const res = await $tt.updateMany.call(this, updateArray, updateOptions);
-			return res;
+			try {
+				const Mapper = this;
+				const res = await this.connection.tools.updateMany.call(
+					this,
+					updateArray,
+					updateOptions
+				);
+				const items = res.map(a => new Mapper(a));
+				return {
+					success: true,
+					error: null,
+					item: items[0],
+					items,
+					count: items.length
+				};
+			} catch (error) {
+				console.log(error);
+				return false;
+			}
 		}
 
 		static async deleteOne(selector, deleteOptions) {
@@ -263,24 +394,129 @@ function parsePropType(type) {
 }
 
 function parseRelation(rawRelation, name) {
-	const $rt = require('../tools/relation-tools');
+	let sortedTables;
 	const relationType = rawRelation.relation || '';
 	switch (relationType.toLowerCase()) {
 		case 'one-to-one':
 		case 'join-to-join':
-			return $rt.joinToJoinRelation.call(this, rawRelation, name);
+			this.relations[name] = {
+				reference: rawRelation.reference,
+				table1: [rawRelation.reference, this.name].sort()[0],
+				table2: [rawRelation.reference, this.name].sort()[1],
+				targetColumn: 'id',
+				type: 'join-to-join',
+				inverse: rawRelation.inverse || this.name.toLowerCase()
+			};
+			this.properties[name] = 'joinToJoin';
+			this.columns[name] = {
+				name,
+				required: false,
+				unique: false,
+				index: false,
+				defaultValue: undefined,
+				isEnum: false,
+				array: false,
+				maxLength: 254,
+				type: 'relation',
+				reference: rawRelation.reference
+			};
+			break;
 		case 'join-to-one':
-			return $rt.joinToOneRelation.call(this, rawRelation, name);
+			this.relations[name] = {
+				reference: rawRelation.reference,
+				targetColumn: 'id',
+				type: 'join-to-one',
+				ownerTable: this.name,
+				referencedTable: rawRelation.reference,
+				inverse: rawRelation.inverse || this.name.toLowerCase()
+			};
+			this.properties[name] = 'joinToOne';
+			this.columns[name] = {
+				name,
+				required: false,
+				unique: false,
+				index: false,
+				defaultValue: undefined,
+				isEnum: false,
+				array: false,
+				maxLength: 254,
+				type: 'relation',
+				reference: rawRelation.reference
+			};
+			break;
 		case 'one-to-join':
-			return $rt.oneToJoinRelation.call(this, rawRelation, name);
+			this.relations[name] = {
+				reference: rawRelation.reference,
+				targetColumn: 'id',
+				type: 'one-to-join',
+				ownerTable: rawRelation.reference,
+				referencedTable: this.name,
+				inverse: rawRelation.inverse
+			};
+			this.properties[name] = 'oneToJoin';
+			break;
 		case 'one-to-many':
-			return $rt.oneToManyRelation.call(this, rawRelation, name);
+			this.relations[name] = {
+				reference: rawRelation.reference,
+				targetColumn: 'id',
+				type: 'one-to-many',
+				ownerTable: rawRelation.reference,
+				referencedTable: this.name
+			};
+			this.properties[name] = 'oneToMany';
+			break;
 		case 'many-to-one':
-			return $rt.manyToOneRelation.call(this, rawRelation, name);
+			this.relations[name] = {
+				reference: rawRelation.reference,
+				targetColumn: 'id',
+				type: 'many-to-one',
+				ownerTable: this.name,
+				referencedTable: rawRelation.reference
+			};
+			this.properties[name] = 'manyToOne';
+			this.columns[name] = {
+				name,
+				required: false,
+				unique: false,
+				index: false,
+				defaultValue: undefined,
+				isEnum: false,
+				array: false,
+				maxLength: 254,
+				type: 'relation',
+				reference: rawRelation.reference
+			};
+			break;
 		case 'many-to-many':
-			return $rt.manyToManyRelation.call(this, rawRelation, name);
+			sortedTables = [rawRelation.reference, this.name].sort();
+			this.relations[name] = {
+				reference: rawRelation.reference,
+				table1: sortedTables[0],
+				table2: sortedTables[1],
+				column1:
+					sortedTables[0] === this.name
+						? name
+						: rawRelation.inverse || this.name.toLowerCase(),
+				column2:
+					sortedTables[1] === this.name
+						? name
+						: rawRelation.inverse || this.name.toLowerCase(),
+				targetTable: `relation_${sortedTables.join('_')}`,
+				type: 'many-to-many'
+			};
+			this.properties[name] = 'manyToMany';
+			break;
 		default:
-			return $rt.defaultRelation.call(this, rawRelation, name);
+			sortedTables = [rawRelation.reference, this.name].sort();
+			this.relations[name] = {
+				reference: rawRelation.reference,
+				column1: sortedTables[0],
+				column2: sortedTables[1],
+				targetTable: `relation_${sortedTables.join('_')}`,
+				type: 'defaultRelation'
+			};
+			this.properties[name] = 'defaultRelation';
+			break;
 	}
 }
 

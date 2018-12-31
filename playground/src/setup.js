@@ -1,6 +1,4 @@
-const ormadillo = require('../build').default;
-
-const rebuild = true;
+const ormadillo = require('ormadillo').default;
 
 const database = {
 	postgres: {
@@ -15,8 +13,7 @@ const database = {
 			schema: 'public'
 		},
 		options: {
-			alwaysRebuild: rebuild,
-			buildFromDatabase: !rebuild
+			alwaysRebuild: true
 		}
 	},
 	sqlite: {
@@ -33,7 +30,7 @@ const database = {
 
 const config = type => ({
 	models: {
-		directory: './test/models'
+		directory: '../../test/models'
 	},
 	database: database[type]
 });

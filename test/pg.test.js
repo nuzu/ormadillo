@@ -75,21 +75,14 @@ describe('insert/create', () => {
 	});
 
 	it('insert and update by save (reference by id)', async () => {
-		expect.assertions(1);
+		expect.assertions(2);
 		const book = new Book({title: 'Visitor', author: 2});
 		const saved = await book.save();
 		expect(saved.title).toBe(book.title);
 		saved.title = 'The Visitor';
-		// Const updated = await saved.save();
-		// expect(updated.title).toBe('The Visitor');
+		const updated = await saved.save();
+		expect(updated.title).toBe('The Visitor');
 	});
-});
-
-/*
-Describe('insert/create', () => {
-	
-
-	
 
 	it('insert and update by save (reference by new object instance)', async () => {
 		expect.assertions(3);
@@ -100,6 +93,7 @@ Describe('insert/create', () => {
 		const saved = await book.save();
 		expect(saved.title).toBe(book.title);
 		expect(saved.author.name).toBe('Eoin Colfer');
+
 		saved.title = 'Artemis Fowl';
 		const updated = await saved.save();
 		expect(updated.title).toBe('Artemis Fowl');
@@ -119,7 +113,6 @@ Describe('insert/create', () => {
 		expect(saved.author.name).toBe('JK Rowling');
 		saved.title = `Harry Potter and the Philosopher's Stone`;
 		const updated = await saved.save();
-		console.log(updated);
 		expect(updated.title).toBe(`Harry Potter and the Philosopher's Stone`);
 	});
 
@@ -153,11 +146,10 @@ Describe('insert/create', () => {
 		expect.assertions(2);
 		const payload = await Book.insertOne({
 			title: 'The Encounter',
-			author: 2,
-			tags: [{value: 'Animorphs'}]
+			author: 2
 		});
 		expect(payload.item.title).toBe('The Encounter');
-		expect(payload.item.author.id).toBe(2);
+		expect(payload.item.author).toBe(2);
 	});
 
 	it('insert by insertOne (reference by new object instance)', async () => {
@@ -204,19 +196,33 @@ Describe('insert/create', () => {
 });
 
 describe('find/query', () => {
-	let Post;
+	let Book;
 	let Author;
 	beforeAll(async done => {
-		({Post, Author} = db.repository);
-		await Post.insertOne({
+		({Book, Author} = db.repository);
+		const author = new Author({
+			name: 'YN Harari'
+		});
+		await author.save();
+		await Book.insertOne({
+			author: author.id,
+			title: 'Sapiens'
+		});
+		/* Await Post.insertOne({
 			title: 'No one is safe',
 			author: 2,
 			tags: ['post', 'documentation']
-		});
+		}); */
 		done();
 	});
 
-	it('find Post including populated relations and arrays', async () => {
+	it('find inserted Book with find', async () => {
+		expect.assertions(1);
+		const res = await Book.find({title: 'Sapiens'});
+		expect(res.item.title).toBe('Sapiens');
+	});
+
+	/* It('find Post including populated relations and arrays', async () => {
 		expect.assertions(2);
 		const postPayload = await Post.find({title: 'No one is safe'});
 		expect(postPayload.items[0].author.id).toBe(2);
@@ -228,10 +234,12 @@ describe('find/query', () => {
 		const postPayload = await Post.findOne({title: 'No one is safe'});
 		expect(postPayload.item.author.id).toBe(2);
 		expect(postPayload.item.tags).toContain('post');
-	});
+	}); */
 });
 
-describe('update/delete', () => {
+/*
+
+Describe('update/delete', () => {
 	let Post;
 	let Author;
 	beforeAll(async done => {

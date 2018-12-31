@@ -17,7 +17,8 @@ module.exports = {
 			type: 'Reference',
 			required: true,
 			reference: 'Author',
-			relation: 'many-to-one'
+			relation: 'many-to-one',
+			inverse: 'post'
 		},
 		tags: {
 			type: 'String',
